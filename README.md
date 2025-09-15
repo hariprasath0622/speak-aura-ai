@@ -4,7 +4,7 @@ A speech analysis tool that helps identify and analyze stammering patterns using
 
 ## Overview
 
-This project uses Google Cloud's Speech-to-Text API and BigQuery AI to analyze speech patterns and identify stammering instances in audio recordings.
+This project uses Google Cloud's BigQuery AI to analyze speech patterns and identify stammering instances in audio recordings.
 
 ## Project Setup
 
