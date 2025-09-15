@@ -6,6 +6,10 @@ A speech analysis tool that helps identify and analyze stammering patterns using
 
 This project uses Google Cloud's BigQuery AI to analyze speech patterns and identify stammering instances in audio recordings.
 
+## Architecture
+
+?
+
 ## Project Setup
 
 ## 1. Set up Google Cloud Project credentials
