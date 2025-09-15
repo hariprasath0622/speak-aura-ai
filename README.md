@@ -87,12 +87,18 @@ speak-aura-ai/
 │   ├── config.py          # Config (project_id, dataset_id, GCS bucket etc...)
 │   ├── pipeline.py        # Orchestrate the full flow
 │   └── upload_audio.py    # Upload user audio → GCS
-├── streamlit_utils/
-│   └───── streamlit_helpers.py
+├──streamlit_utils/
+│   ├─  __init__.py
+│   ├─ tab_upload.py
+│   ├─ tab_analysis.py
+│   ├─ tab_semantic.py
+│   ├─ tab_progress.py
+│   ├─ tab_about.py
+│   └── streamlit_helpers.py 
 ├── tests/
 │    └── test_transcribe.py # Unit tests
 │── .env    
-│── env-template.txt    
+│──  env-template.txt    
 │── .gitignore    
 │── README.md                # Overview, setup, hackathon writeup link
 │── requirements.txt         # Python dependencies
