@@ -1,14 +1,49 @@
 # Speak Aura AI
 
-A speech analysis tool that helps identify and analyze stammering patterns using Google Cloud Platform services.
+A speech analysis tool that identifies and analyzes stammering patterns using **Google Cloud BigQuery AI**.  
+Our solution empowers individuals with speech disfluencies to **track progress, receive personalized therapy plans, and compare their journey with similar cases** — all powered by **SQL + AI**.
 
-## Overview
+---
 
-This project uses Google Cloud's BigQuery AI to analyze speech patterns and identify stammering instances in audio recordings.
+## 🚀 Overview
+
+- 🎤 Upload speech audio → stored in **Google Cloud Storage**  
+- 📝 Transcribe + analyze → processed in **BigQuery AI**  using ML.transcribe
+- 📊 Detect stammering metrics (pauses, repetitions, fillers)  
+- 🧠 Generate personalized therapy guidance with **Gemini**  using AI.GENERATE
+- 🔍 Find similar cases using **vector search** embeddings  using ML.GENERATE_EMBEDDING AND VECTOR_SEARCH
+- 🔮 Forecast future fluency scores with **AI.FORECAST**  using AI.FORECAST (This creates a **feedback loop** where users can **monitor, compare, and improve** their speech patterns over time.)  
+
+---
+
+## 🏗️ Architecture
+
+```
+Architecture Image
+```
+
+
 
 ## Architecture
 
 ?
+
+## How Our Solution Uses BigQuery AI
+
+### 🖼️ Multimodal Pioneer
+- Built a **BigQuery Object Table** referencing audio files stored in GCS.  
+- This allows us to **treat raw audio as queryable data in SQL**, bridging **unstructured (audio)** with **structured (transcripts + metrics)** seamlessly.  
+
+### 🕵️ Semantic Detective
+- Generated **embeddings** with **`ML.GENERATE_EMBEDDING`** and performed **`VECTOR_SEARCH`** in BigQuery.  
+- This enables our app to **find similar past speech cases**, so users can compare their journey with others and learn from proven strategies.  
+
+### 🧠 AI Architect
+- Applied **`AI.FORECAST`** to predict **future fluency scores**, giving users a forward-looking view of their speech progress.  
+- Used **`AI.GENERATE (Gemini)`** to create **personalized therapy plans** based on transcript + stammering metrics.  
+
+---
+✅ By combining **forecasting, semantic search, and multimodal analysis**, our solution demonstrates the **full spectrum of BigQuery AI capabilities** in one integrated workflow.  
 
 ## Project Setup
 
@@ -20,8 +55,8 @@ This project uses Google Cloud's BigQuery AI to analyze speech patterns and iden
 
 ## 2. Create a .env file
 
-1. Copy all variables from .env-template into a new .env file.
-2. Fill in all required values for your environment.
+1. Copy from `.env-template` → `.env` 
+2. Fill in required values (project, dataset, bucket, etc).
 
 ## 3. Set up GCP resources and permissions
 
@@ -32,13 +67,13 @@ This project uses Google Cloud's BigQuery AI to analyze speech patterns and iden
 notebooks/gcp_resource_setup.ipynb
 
 ```
-2. Run all cells to configure IAM roles and connection permissions.
+2. Run all cells to configure IAM roles + connections.
 
 ## 4. Create a virtual environment
 
 ``` bash
 python -m venv aura_env
-source venv aura_env/bin/activate 
+source aura_env/bin/activate 
 # On Windows: venv aura_env\Scripts\activate
 
 ```
@@ -67,50 +102,45 @@ python -m create_resource.create_resource
 2. Make sure you are in the root folder of the project.
 3. Launch the Streamlit app
 
+``` bash
+streamlit run streamlit_app.py
+```
 
 ## Project Structure
 
 ```
 speak-aura-ai/
-│
-│── credentials              # store the service account key json
+│── credentials/             # GCP service account keys
 ├── data/
-│   ├── audio/              # Sample audio files (user test input)
-│   └── transcripts/        # Output transcripts for testing
-│
+│   ├── audio/               # Sample input audio files
+│   └── transcripts/         # Sample transcripts to use while recording
 ├── notebooks/
-│   └── gcp_resource_setup.ipynb    # note book to setup IAM permission and connection for Vertex AI and GCS
-│
+│   └── gcp_resource_setup.ipynb   # Setup IAM + GCP resources
 ├── src/
-├── create_resource/
-│   └───── create_resource.py/              # code to setup all the resource to run the project like  gcs , bigquery - datasets,tables,models
-│   ├── __init__.py
-│   ├── analyze_stammer.py # Highlight stammering patterns
-│   ├── bigquery_utils.py  # All bigquery queries used for this project
-│   ├── client.py          # Setup clients for bigquery,speech etc..
-│   ├── config.py          # Config (project_id, dataset_id, GCS bucket etc...)
-│   ├── pipeline.py        # Orchestrate the full flow
-│   └── upload_audio.py    # Upload user audio → GCS
-├──streamlit_utils/
-│   ├─  __init__.py
-│   ├─ tab_upload.py
-│   ├─ tab_analysis.py
-│   ├─ tab_semantic.py
-│   ├─ tab_progress.py
-│   ├─ tab_about.py
-│   └── streamlit_helpers.py 
+│   ├── create_resource/     # Scripts to set up GCS/BigQuery
+│   ├── analyze_stammer.py   # Detect stammering in text
+│   ├── bigquery_utils.py    # All BigQuery query helpers
+│   ├── client.py            # GCP client initialization
+│   ├── config.py            # Project configs (IDs, buckets)
+│   ├── pipeline.py          # Orchestrates data → analysis
+│   └── upload_audio.py      # Upload audio → GCS bucket
+├── streamlit_utils/
+│   ├── tab_upload.py        # UI: Upload audio
+│   ├── tab_analysis.py      # UI: Stammer analysis
+│   ├── tab_semantic.py      # UI: Similar case search
+│   ├── tab_progress.py      # UI: Forecast & progress
+│   ├── tab_about.py         # UI: About section
+│   └── streamlit_helpers.py # Shared UI helpers
 ├── tests/
-│    └── test_transcribe.py # Unit tests
-│── .env    
-│──  env-template.txt    
-│── .gitignore    
-│── README.md                # Overview, setup, hackathon writeup link
+│   └── test_transcribe.py   # Unit tests for transcription
+│── .env                     # Local env vars
+│── .env-template.txt        # Env var template
+│── .gitignore               # Git ignore rules
+│── README.md                # Project documentation
 │── requirements.txt         # Python dependencies
-└── streamlit_app.py         # main application - start of the flow 
+└── streamlit_app.py         # Main Streamlit entrypoint
 
 ```
-
-
 
 ## Reference code
 

@@ -1,9 +1,4 @@
 # Python dependencies
-google-cloud-speech==2.33.0
-google-cloud-storage==3.3.1
-google-cloud-bigquery==3.37.0
-google-cloud-bigquery-storage
-google-cloud-bigquery-connection==1.18.3
 pandas==2.3.2
 numpy==2.3.3
 jupyter==1.1.1
@@ -11,6 +6,9 @@ python-dotenv==1.1.1
 streamlit==1.49.1
 plotly==6.3.0
 streamlit-mic-recorder==0.0.8
-db-dtypes
-google-cloud-aiplatform
+db-dtypes==1.4.3
 pandas-gbq==0.29.2
+google-cloud-storage==3.3.1
+google-cloud-bigquery==3.37.0
+google-cloud-bigquery-storage==2.33.1
+google-cloud-bigquery-connection==1.18.3

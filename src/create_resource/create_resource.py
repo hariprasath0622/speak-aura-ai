@@ -1,6 +1,6 @@
 import os
 from google.cloud import bigquery
-from clients import get_bq_client, get_storage_client, get_speech_client, get_bq_connection_v1_client
+from clients import get_bq_client, get_storage_client
 import subprocess
 import config
 
@@ -9,8 +9,6 @@ import config
 # -----------------------------
 bq_client = get_bq_client()
 storage_client = get_storage_client()
-speech_client = get_speech_client() 
-bq_connection_v1_client = get_bq_connection_v1_client()
 
 
 # -----------------------------
