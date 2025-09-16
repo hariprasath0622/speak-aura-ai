@@ -4,9 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from src import config
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-
+import uuid
 
 def transcribe_audio(gcs_uri, bq_client):
     """
@@ -227,3 +225,139 @@ def fetch_forecast(bq_client, horizon: int = 10, confidence_level: float = 0.8) 
     return forecast_df
 
 
+def process_pdf_in_bigquery(bq_client, gcs_uri):
+    """
+    Processes a PDF with Document AI, generates embeddings, and appends both
+    parsed content and embeddings to the final embeddings table using temporary tables.
+    """
+
+    # Generate unique temporary table names per PDF
+    temp_process_table = f"{config.PROJECT_ID}.{config.DATASET_ID}.temp_process_{uuid.uuid4().hex[:8]}"
+    temp_parsed_table = f"{config.PROJECT_ID}.{config.DATASET_ID}.temp_parsed_{uuid.uuid4().hex[:8]}"
+
+    # 1️⃣ Process document using ML.PROCESS_DOCUMENT into a temp table
+    process_options = '{"layout_config": {"chunking_config": {"chunk_size": 200}}}'
+    process_query = f"""
+    CREATE OR REPLACE TABLE `{temp_process_table}` AS
+    SELECT * FROM ML.PROCESS_DOCUMENT(
+        MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.LAYOUT_PARSER_REMOTE_MODEL}`,
+        TABLE `{config.PROJECT_ID}.{config.DATASET_ID}.{config.PDF_DATA_OBJECT_TABLE_ID}`,
+        PROCESS_OPTIONS => (JSON '{process_options}')
+    )
+    WHERE uri = '{gcs_uri}'
+    """
+    bq_client.query(process_query).result()
+
+    # 2️⃣ Parse JSON results into another temp table
+    parse_query = f"""
+    CREATE OR REPLACE TABLE `{temp_parsed_table}` AS
+    SELECT
+        uri,
+        JSON_EXTRACT_SCALAR(json, '$.chunkId') AS chunk_id,
+        JSON_EXTRACT_SCALAR(json, '$.content') AS content,
+        CAST(JSON_EXTRACT_SCALAR(json, '$.pageSpan.pageStart') AS INT64) AS page_start,
+        CAST(JSON_EXTRACT_SCALAR(json, '$.pageSpan.pageEnd') AS INT64) AS page_end
+    FROM `{temp_process_table}`,
+    UNNEST(JSON_EXTRACT_ARRAY(ml_process_document_result.chunkedDocument.chunks, '$')) AS json
+    """
+    bq_client.query(parse_query).result()
+
+    # 3️⃣ Generate embeddings from temp parsed table and append to main embeddings table
+    embed_query = f"""
+    INSERT INTO `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}` 
+    SELECT
+        uri,
+        chunk_id,
+        content,
+        page_start,
+        page_end,
+        ml_generate_embedding_result AS embedding
+    FROM ML.GENERATE_EMBEDDING(
+        MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_EMBEDDING_MODEL_ID}`,
+        TABLE `{temp_parsed_table}`,
+        STRUCT(TRUE AS flatten_json_output, 'RETRIEVAL_DOCUMENT' AS task_type)
+    )
+    """
+    bq_client.query(embed_query).result()
+
+    # 4️⃣ Cleanup temp tables
+    bq_client.query(f"DROP TABLE IF EXISTS `{temp_process_table}`").result()
+    bq_client.query(f"DROP TABLE IF EXISTS `{temp_parsed_table}`").result()
+
+# Function to get already processed files from parsed table
+def get_processed_files(st, bq_client):
+    query = f"""
+        SELECT DISTINCT uri
+        FROM `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`
+    """
+    try:
+        df = bq_client.query(query).to_dataframe()
+        return set(df['uri'].tolist())
+    except Exception as e:
+        st.warning(f"Could not fetch processed files: {e}")
+        return set()
+
+def generate_text_with_vector_search(
+    bq_client ,
+    user_question: str,
+    top_k: int = 10,
+    fraction_lists_to_search: float = 0.01,
+    max_output_tokens: int = 512
+) -> str:
+    """
+    Generate text augmented by vector search results from BigQuery.
+
+    Args:
+        bq_client: BigQuery client
+        project_id: GCP project ID
+        dataset_id: BigQuery dataset ID
+        embeddings_table: Table with stored embeddings
+        embedding_model: Embedding model (BigQuery ML)
+        text_model: Text generation model (e.g. gemini-pro / gemini-flash)
+        user_question: Query to answer
+        top_k: Number of chunks to retrieve
+        fraction_lists_to_search: Controls IVF search performance
+        max_output_tokens: Max output tokens for the response
+
+    Returns:
+        str: Generated answer from Gemini
+    """
+
+    query = f"""
+    SELECT
+      ml_generate_text_llm_result AS generated
+    FROM
+      ML.GENERATE_TEXT(
+        MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_MODEL}`,
+        (
+          SELECT
+            CONCAT(
+              'Question: {user_question}\n\n',
+              'Answer concisely using the context below:\n\n',
+              STRING_AGG(FORMAT("context: %s (source: %s)", base.content, base.uri), '\n\n')
+            ) AS prompt
+          FROM
+            VECTOR_SEARCH(
+              TABLE `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`,
+              'embedding',
+              (
+                SELECT
+                  ml_generate_embedding_result AS embedding,
+                  '{user_question}' AS query
+                FROM
+                  ML.GENERATE_EMBEDDING(
+                    MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_EMBEDDING_MODEL_ID}`,
+                    (SELECT '{user_question}' AS content)
+                  )
+              ),
+              top_k => {top_k},
+              OPTIONS => '{{"fraction_lists_to_search": {fraction_lists_to_search}}}'
+            )
+        ),
+        STRUCT({max_output_tokens} AS max_output_tokens, TRUE AS flatten_json_output)
+      )
+    """
+    print("Running query for text generation with vector search...",bq_client)
+    results = bq_client.query(query).result()
+    row = next(results, None)
+    return row.generated if row else "No answer generated."

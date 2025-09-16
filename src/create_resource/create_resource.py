@@ -1,9 +1,11 @@
 import os
 from google.cloud import bigquery
-from clients import get_bq_client, get_storage_client
+from clients import get_bq_client, get_storage_client,credentials
 import subprocess
 import config
 
+from google.cloud import bigquery, documentai
+from google.api_core.client_options import ClientOptions
 # -----------------------------
 # Clients
 # -----------------------------
@@ -156,6 +158,142 @@ def create_text_embedding_model():
     query_job.result()  # Wait for the job to complete
     print(f"✅ Remote embedding model created: {model_id}")
 
+
+
+# ---------------- DOCUMENT INGESTION FUNCTIONS ---------------- #
+
+# ---------------- DOCUMENT AI PROCESSOR ---------------- #
+def create_layout_parser_processor():
+    """
+    Creates a Layout Parser Processor in Document AI and returns processor_id.
+    One-time setup.
+    """
+    location = config.DATASET_LOCATION  # e.g., "us"
+    processor_display_name = "layout_parser_processor"
+    processor_type = "LAYOUT_PARSER_PROCESSOR"
+
+    opts = ClientOptions(api_endpoint="us-documentai.googleapis.com")
+    client = documentai.DocumentProcessorServiceClient(credentials=credentials,client_options=opts)
+
+    parent = client.common_location_path(config.PROJECT_ID, location.lower())
+    processor = client.create_processor(
+        parent=parent,
+        processor=documentai.Processor(
+            display_name=processor_display_name,
+            type_=processor_type
+        ),
+    )
+
+    # Print the processor information
+    print(f"✅ Document AI processor created:")
+    print(f"Processor Name: {processor.name}")
+    print(f"Processor Display Name: {processor.display_name}")
+    print(f"Processor Type: {processor.type_}")
+
+    processor_id = processor.name.split("/")[-1]
+    return processor_id
+
+# ---------------- EXTERNAL OBJECT TABLE ---------------- #
+def create_external_pdf_table():
+    """
+    Creates an external object table pointing to PDFs in GCS.
+    One-time setup.
+    """
+    sql = f"""
+    CREATE OR REPLACE EXTERNAL TABLE `{config.PROJECT_ID}.{config.DATASET_ID}.{config.PDF_DATA_OBJECT_TABLE_ID}`
+    WITH CONNECTION `{config.DATASET_LOCATION}.{config.CONNECTION_ID}`
+    OPTIONS (
+      uris = ['gs://{config.BUCKET_NAME}/documents/*'],
+      object_metadata = 'DIRECTORY'
+    )
+    """
+    bq_client.query(sql).result()
+    print("✅ External object table created.")
+
+
+# ---------------- REMOTE DOCUMENT AI MODEL ---------------- #
+def create_remote_parser_model(processor_id: str):
+    """
+    Creates a remote Document AI model in BigQuery referencing the Layout Parser processor.
+    One-time setup.
+    """
+    sql = f"""
+    CREATE OR REPLACE MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.LAYOUT_PARSER_REMOTE_MODEL}`
+    REMOTE WITH CONNECTION `{config.DATASET_LOCATION}.{config.CONNECTION_ID}`
+    OPTIONS (
+        remote_service_type="CLOUD_AI_DOCUMENT_V1",
+        document_processor="{processor_id}"
+    )
+    """
+    bq_client.query(sql).result()
+    print("✅ Remote parser model created.")
+
+
+# ---------------- PARSED TABLE ---------------- #
+def create_parsed_table():
+    """
+    Creates parsed PDF table with proper schema.
+    One-time setup.
+    """
+    schema = [
+        bigquery.SchemaField("uri", "STRING"),
+        bigquery.SchemaField("chunk_id", "STRING"),
+        bigquery.SchemaField("content", "STRING"),
+        bigquery.SchemaField("page_footers_text", "STRING"),
+        bigquery.SchemaField("page_start", "INT64"),
+        bigquery.SchemaField("page_end", "INT64"),
+    ]
+    table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.PARSED_PDF_TABLE_ID}"
+    table = bigquery.Table(table_id, schema=schema)
+    table = bq_client.create_table(table, exists_ok=True)
+    print(f"✅ Parsed table created: {table_id}")
+
+
+def create_embeddings_table_if_not_exists():
+    """
+    Creates the embeddings table if it doesn't exist.
+    Should be run once before processing PDFs incrementally.
+    """
+    table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}"
+
+    # Create table if it doesn't exist
+    try:
+        bq_client.get_table(table_id)
+        print(f"✅ Embeddings table already exists: {table_id}")
+    except:
+        # Define a minimal schema (columns will match ML.GENERATE_EMBEDDING output)
+        schema = [
+            bigquery.SchemaField("uri", "STRING"),
+            bigquery.SchemaField("chunk_id", "STRING"),
+            bigquery.SchemaField("content", "STRING"),
+            bigquery.SchemaField("page_start", "INT64"),
+            bigquery.SchemaField("page_end", "INT64"),
+            bigquery.SchemaField("text_embeddings", "FLOAT64", mode="REPEATED"),
+        ]
+
+        table = bigquery.Table(table_id, schema=schema)
+        bq_client.create_table(table)
+        print(f"✅ Embeddings table created: {table_id}")
+
+def create_vector_index_if_not_exists():
+
+    sql = f"""CREATE OR REPLACE VECTOR INDEX my_index ON `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`(text_embeddings) 
+    OPTIONS(index_type = 'TREE_AH',
+    distance_type = 'COSINE')
+    """
+
+    bq_client.query(sql).result()
+    print("✅ Vector index created (or replaced).")
+
+
+def create_document_ingestion_setup():
+    """Run all one-time setup steps."""
+    # processor_id = create_layout_parser_processor()
+    # create_external_pdf_table()
+    # create_remote_parser_model(processor_id)
+    # create_embeddings_table_if_not_exists()
+    # create_vector_index_if_not_exists()
+
 # -----------------------------
 # Resource Creation
 # -----------------------------
@@ -169,6 +307,7 @@ def create_resources():
     # create_audio_object_table()
     # create_analysis_results_table()
     # create_embeddings_table()
+    # create_document_ingestion_setup()
     pass
 
 # -----------------------------
