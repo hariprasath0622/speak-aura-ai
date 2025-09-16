@@ -19,7 +19,7 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 ## 🏗️ Architecture
 
 ```
-![Architecture Diagram](https://github.com/hariprasath0622/speak-aura-ai/blob/main/assets/speark_aura_architecture.png)
+![Architecture Diagram](assets/speark_aura_architecture.png)
 ```
 
 
