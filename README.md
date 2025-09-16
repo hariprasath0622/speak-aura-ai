@@ -18,7 +18,9 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 
 ## 🏗️ Architecture
 
-![Architecture Diagram](/assets/speak_aura_architecture.png)
+
+![Architecture Diagram](assets/speark_aura_architecture.png)
+
 
 
 ## Architecture
