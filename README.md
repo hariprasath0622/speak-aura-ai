@@ -44,6 +44,17 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 ---
 ✅ By combining **forecasting, semantic search, and multimodal analysis**, our solution demonstrates the **full spectrum of BigQuery AI capabilities** in one integrated workflow.  
 
+## Local Setup & Execution
+
+We provide a step-by-step guide to set up and run **SpeakAura AI** locally. To get started:
+
+1. Configure a billing-enabled Google Cloud project in your `.env` file.
+2. Run the setup script — it will automatically handle IAM permissions and create the necessary resources.
+3. Once complete, the system is ready to use.
+
+This makes it easy to get the project running locally without manual resource setup.
+
+
 ## Project Setup
 
 ## 1. Set up Google Cloud Project credentials
@@ -68,7 +79,6 @@ notebooks/gcp_resource_setup.ipynb
 
 ```
 
-
 ## 3. Create a virtual environment
 
 ``` bash
@@ -86,14 +96,12 @@ pip install -r requirements.txt
 
 ## 5. Create project resources
 
-1. Open a terminal and navigate to the src folder:
-
-``` bash
-cd src
-```
+1. Open a terminal and navigate to the root folder:
 2. Run the resource creation script:
 ``` bash
-python -m create_resource.create_resource
+
+python create_resource.py
+
 ```
 
 ## 6. Run the project
@@ -117,7 +125,6 @@ speak-aura-ai/
 ├── notebooks/
 │   └── gcp_resource_setup.ipynb   # Setup IAM + GCP resources
 ├── src/
-│   ├── create_resource/     # Scripts to set up GCS/BigQuery
 │   ├── analyze_stammer.py   # Detect stammering in text
 │   ├── bigquery_utils.py    # All BigQuery query helpers
 │   ├── client.py            # GCP client initialization
@@ -134,8 +141,9 @@ speak-aura-ai/
 ├── tests/
 │   └── test_transcribe.py   # Unit tests for transcription
 │── .env                     # Local env vars
-│── .env-template.txt        # Env var template
 │── .gitignore               # Git ignore rules
+├── create_resource.py     # Scripts to set up GCS/BigQuery
+│── .env-template.txt        # Env var template
 │── README.md                # Project documentation
 │── requirements.txt         # Python dependencies
 └── streamlit_app.py         # Main Streamlit entrypoint
@@ -145,25 +153,3 @@ speak-aura-ai/
 ## Reference code
 
  https://github.com/GoogleCloudPlatform/generative-ai/tree/e3fdeae53809fadc60887f3c0411c00510cfe561/gemini/use-cases/applying-llms-to-data
-
-
-## License
-
-
-<!-- 
-
-gcloud auth application-default revoke
-
-gcloud init
-
-1] Re-initialize this configuration [default] with new settings
-
-Login 
-
-choose created project
-
-gcloud auth application-default login
-
-gcloud cheat-sheet 
-
--->

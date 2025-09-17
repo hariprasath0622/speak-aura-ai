@@ -1,10 +1,32 @@
+# ==============================
 # streamlit_utils/tab_about.py
+# ==============================
+# This file defines the "About" tab in the Streamlit UI for SpeakAura AI.
+# It provides an overview of the app, its problem-solution approach,
+# practical impact, and technical workings using BigQuery AI.
 
 import streamlit as st
 
+# ==============================
+# RENDER FUNCTION
+# ==============================
 def render(tab, st):
+    """
+    Render the "About SpeakAura AI" tab in Streamlit.
+
+    Args:
+        tab: Streamlit tab container
+        st: Streamlit module
+    """
     with tab:
+        # -----------------------------
+        # Header
+        # -----------------------------
         st.header("ℹ️ About SpeakAura AI")
+
+        # -----------------------------
+        # Markdown Content
+        # -----------------------------
         st.markdown("""
         **SpeakAura AI** — an end-to-end BigQuery AI pipeline that detects stammering 
         and generates personalized therapy plans.  
@@ -39,9 +61,9 @@ def render(tab, st):
             1. Generate transcript embeddings using **`ML.GENERATE_EMBEDDINGS`**  
             2. Perform top-k vector search using **`VECTOR_SEARCH`**  
         - 📈 **Results stored back in BigQuery** for continuous tracking & progress monitoring
-        - 📈 ** And speech therapy documents are also injested and created embeddings for that pdf contents and created vector index for that , that will be used by ai generate text to grounding the data and user have any questions about that so it will domain speciifc answers 
-                    and it also used to genrate thereapy plans
-                    
+        - 📄 **Speech therapy documents ingested**:
+            - PDF contents are converted to embeddings and a vector index is created
+            - Enables AI to provide domain-specific answers and generate therapy plans
 
         ---
         **Learn More About Stammering / Stuttering:**  

@@ -1,19 +1,44 @@
 """
-Helper functions for the Streamlit UI
+Helper functions for Streamlit UI
+Provides utilities for formatting transcripts, parsing stammer analysis,
+tracking progress, and creating interactive charts.
 """
+
+# ==============================
+# IMPORTS
+# ==============================
 import pandas as pd
-import plotly.express as px
 import json
 from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 
+# ==============================
+# TRANSCRIPT UTILITIES
+# ==============================
 def format_transcript(transcript_text: str) -> str:
-    """Format the transcript text for display"""
+    """
+    Clean and format the transcript text for display.
+    Removes leading/trailing spaces.
+    """
     return transcript_text.strip()
 
+
+# ==============================
+# STAMMER ANALYSIS UTILITIES
+# ==============================
 def parse_stammer_analysis(analysis_json: str) -> dict:
-    """Parse the JSON output from stammer analysis"""
+    """
+    Parse JSON output from stammer analysis.
+    
+    Returns:
+        dict: {
+            'transcript': str,
+            'stammer_count': int,
+            'patterns': list,
+            'suggestions': list
+        }
+    """
     try:
         data = json.loads(analysis_json)
         return {
@@ -22,7 +47,7 @@ def parse_stammer_analysis(analysis_json: str) -> dict:
             'patterns': data.get('analysis', {}).get('patterns', []),
             'suggestions': data.get('analysis', {}).get('suggestions', [])
         }
-    except:
+    except Exception:
         return {
             'transcript': '',
             'stammer_count': 0,
@@ -30,18 +55,29 @@ def parse_stammer_analysis(analysis_json: str) -> dict:
             'suggestions': []
         }
 
-def save_session_results(transcript: str, analysis: dict) -> None:
-    """Save session results to track progress"""
+
+def save_session_results(transcript: str, analysis: dict) -> dict:
+    """
+    Save session results for progress tracking.
+    
+    For demo purposes, returns a dictionary.
+    In production, could save to database or file.
+    """
     now = datetime.now()
-    # Here you could save to a database or file
-    # For hackathon demo, we'll use session state
     return {
         'date': now.strftime('%Y-%m-%d'),
         'fluency_score': 100 - (analysis.get('stammer_count', 0) * 5),  # Example scoring
-        'confidence': 75  # Could be derived from audio analysis
+        'confidence': 75  # Placeholder: could derive from audio analysis
     }
 
-def create_forecast_chart(history_df, forecast_df):
+
+# ==============================
+# FORECAST & PROGRESS CHARTS
+# ==============================
+def create_forecast_chart(history_df, forecast_df) -> go.Figure:
+    """
+    Create a Plotly chart showing historical fluency and forecast with confidence intervals.
+    """
     fig = go.Figure()
 
     # Historical fluency
@@ -84,13 +120,14 @@ def create_forecast_chart(history_df, forecast_df):
     return fig
 
 
-# Helper: Convert metrics JSON into structured dataframe
-def build_progress_df(bigquery_df):
+# ==============================
+# DATAFRAME UTILITIES
+# ==============================
+def build_progress_df(bigquery_df: pd.DataFrame) -> pd.DataFrame:
     """
     Convert BigQuery results into a structured progress DataFrame.
 
-    Ensures all columns have the same length, fills missing metrics with defaults,
-    and formats Date properly for plotting.
+    Handles missing metrics, parses JSON safely, and formats dates.
     """
     if bigquery_df.empty:
         return pd.DataFrame(columns=["Date", "Fluency Score", "Filler Count", "Repetitions", "Total Words"])
@@ -115,27 +152,22 @@ def build_progress_df(bigquery_df):
         })
 
     df = pd.DataFrame(rows)
-
-    # Drop rows with missing Date or Fluency Score
-    df = df.dropna(subset=["Date", "Fluency Score"])
-
-    # Reset index
-    df = df.reset_index(drop=True)
-
+    df = df.dropna(subset=["Date", "Fluency Score"]).reset_index(drop=True)
     return df
 
-def create_progress_chart(df):
+
+def create_progress_chart(df: pd.DataFrame) -> go.Figure:
     """
-    Create a Plotly line chart for progress data safely.
-    Handles empty or mismatched data, and ensures y-axis range is 0-100.
+    Create a Plotly line chart for progress data.
+    
+    Ensures y-axis is 0-100 and handles empty or small datasets safely.
     """
-    # If DataFrame is empty or has <2 rows, return empty figure
     if df.empty or len(df) < 2:
         fig = px.line(title="Fluency Score Over Time")
         fig.update_layout(yaxis=dict(range=[0, 100]))
         return fig
 
-    # Ensure 'Date' and 'Fluency Score' lengths match
+    # Ensure matching lengths for plotting
     min_len = min(len(df['Date']), len(df['Fluency Score']))
     df = df.iloc[:min_len]
 

@@ -1,32 +1,54 @@
+# ==============================
 # src/tabs/tab_chat.py
-from src.bigquery_utils import generate_text_with_vector_search
+# ==============================
+# This file defines the "AI Therapy Chat" tab in Streamlit.
+# Users can ask questions and receive responses from the AI Speech Therapist
+# using vector search over BigQuery data.
 
+from src.bigquery_utils.retrieval_qa import generate_text_with_vector_search
+
+# ==============================
+# RENDER FUNCTION
+# ==============================
 def render(tab, st, bq_client):
+    """
+    Render the "Chat With AI Speech Therapist" tab.
+
+    Args:
+        tab: Streamlit tab container
+        st: Streamlit module
+        bq_client: BigQuery client instance
+    """
     with tab:
-        st.header("💬 AI Chat")
+        # -----------------------------
+        # Header
+        # -----------------------------
+        st.header("Chat With AI Speech Therapist")
 
-        # Initialize chat history
-        if "chat_history" not in st.session_state:
-            st.session_state.chat_history = []
+        # -----------------------------
+        # User Input Box
+        # -----------------------------
+        # Text input for user question; placeholder guides user
+        user_input = st.text_input(
+            "Ask a question:", 
+            placeholder="Type your question here..."
+        )
 
-        # Display previous conversation
-        for qa in st.session_state.chat_history:
-            st.markdown(f"**You:** {qa['q']}")
-            st.markdown(f"**AI:** {qa['a']}")
-
-        # Input box
-        user_input = st.text_input("Ask a question:", placeholder="Type your question here...")
-
+        # -----------------------------
+        # Send Button Logic
+        # -----------------------------
         if st.button("Send", key="chat_send"):
-            if user_input.strip():
+            if user_input.strip():  # Ensure input is not empty
                 with st.spinner("Generating response..."):
+                    # Generate AI response using BigQuery vector search
                     answer = generate_text_with_vector_search(
                         bq_client,
                         user_question=user_input
                     )
 
-                # Save in chat history
-                st.session_state.chat_history.append({"q": user_input, "a": answer})
-                st.rerun()
+                # Display the AI response
+                st.subheader("AI Speech Therapist Response")
+                st.markdown(answer)
             else:
+                # Warn if no input is provided
                 st.warning("Please enter a question.")

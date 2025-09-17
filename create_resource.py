@@ -1,25 +1,36 @@
+# ==============================
+# IMPORTS
+# ==============================
 import os
-from google.cloud import bigquery
-from clients import get_bq_client, get_storage_client,credentials
 import subprocess
-import config
-
 from google.cloud import bigquery, documentai
 from google.api_core.client_options import ClientOptions
-# -----------------------------
-# Clients
-# -----------------------------
+
+# Custom modules
+from src.clients import get_bq_client, get_storage_client, credentials
+from src import config
+
+# ==============================
+# CLIENT INITIALIZATION
+# ==============================
+# BigQuery client for running queries
 bq_client = get_bq_client()
+
+# Google Cloud Storage client for interacting with GCS buckets
 storage_client = get_storage_client()
 
 
-# -----------------------------
-# Functions
-# -----------------------------
+# ==============================
+# BIGQUERY DATASET AND TABLE CREATION
+# ==============================
 
 def create_bq_dataset():
+    """
+    Create a BigQuery dataset if it doesn't exist.
+    """
     dataset_ref = bigquery.Dataset(f"{config.PROJECT_ID}.{config.DATASET_ID}")
     dataset_ref.location = config.DATASET_LOCATION
+
     try:
         bq_client.create_dataset(dataset_ref)
         print(f"✅ Created dataset {config.DATASET_ID} in {config.DATASET_LOCATION}")
@@ -28,22 +39,26 @@ def create_bq_dataset():
             print(f"ℹ️ Dataset {config.DATASET_ID} already exists")
         else:
             raise
+
     return dataset_ref
 
 
 def create_audio_object_table():
-    client = bq_client
+    """
+    Creates an external table for audio objects stored in GCS.
+    Grants access to the bucket and links table to BigQuery via a connection.
+    """
     table_full_name = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.AUDIO_OBJECT_TABLE_ID}"
     connection_full_name = f"projects/{config.PROJECT_ID}/locations/{config.DATASET_LOCATION}/connections/{config.CONNECTION_ID}"
 
-    # Grant access to the GCS bucket
+    # Grant service account access to the GCS bucket
     subprocess.run([
         "gsutil", "iam", "ch",
         f"serviceAccount:{config.SERVICE_ACCOUNT_KEY_ID}:roles/storage.objectViewer",
         f"gs://{config.BUCKET_NAME}"
     ], check=True)
 
-    # Create external table
+    # Create external table pointing to audio files in GCS
     sql = f"""
     CREATE OR REPLACE EXTERNAL TABLE `{table_full_name}`
     WITH CONNECTION `{connection_full_name}`
@@ -52,12 +67,13 @@ def create_audio_object_table():
       uris = ['gs://{config.BUCKET_NAME}/audio/*']
     );
     """
-    client.query(sql).result()
-    print(f"External object table created: {table_full_name}")
+    bq_client.query(sql).result()
+    print(f"✅ External object table created: {table_full_name}")
+
 
 def create_embeddings_table():
     """
-    Creates an empty table for storing transcript embeddings incrementally.
+    Creates an empty table to store transcript embeddings incrementally.
     """
     table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID}"
 
@@ -73,11 +89,18 @@ def create_embeddings_table():
     )
     """
     
-    query_job = bq_client.query(create_table_query)
-    query_job.result() 
+    bq_client.query(create_table_query).result()
     print(f"✅ Table `{table_id}` is ready!")
 
+
+# ==============================
+# REMOTE MODELS
+# ==============================
+
 def create_transcription_model():
+    """
+    Creates a remote transcription model in BigQuery for speech-to-text.
+    """
     connection_name = f"projects/{config.PROJECT_NUMBER}/locations/{config.DATASET_LOCATION.lower()}/connections/{config.CONNECTION_ID}"
 
     query = f"""
@@ -88,34 +111,26 @@ def create_transcription_model():
     )
     """
     bq_client.query(query).result()
-    print(f"✅ Created remote transcription model {config.SPEECH_MODEL_ID} in dataset {config.DATASET_ID}")
+    print(f"✅ Created remote transcription model {config.SPEECH_MODEL_ID}")
+
 
 def create_gemini_remote_model():
     """
-    Create or replace a remote Gemini model in BigQuery.
-
-    Args:
-        project_id (str): GCP project ID.
-        dataset_id (str): BigQuery dataset where the model will be created.
-        model_id (str): Name of the model to create.
-        connection_id (str): BigQuery Connection ID pointing to Vertex AI.
-        endpoint (str): Gemini model endpoint, e.g., 'gemini-2.5-flash'.
+    Creates a remote Gemini model in BigQuery for generative AI tasks.
     """
-
     sql = f"""
     CREATE OR REPLACE MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_MODEL}`
     REMOTE WITH
         CONNECTION `us.{config.CONNECTION_ID}`
         OPTIONS (ENDPOINT = '{config.GENERATIVE_AI_MODEL_ENDPOINT}');
     """
+    bq_client.query(sql).result()
+    print(f"✅ Remote Gemini model `{config.DATASET_ID}.{config.GENERATIVE_AI_MODEL}` created.")
 
-    query_job = bq_client.query(sql)
-    query_job.result()  # Wait for the job to complete
-    print(f"Remote Gemini model `{config.DATASET_ID}.{config.GENERATIVE_AI_MODEL}` created successfully.")
 
 def create_text_embedding_model():
     """
-    Creates or replaces a remote BigQuery model pointing to a Vertex AI embedding endpoint.
+    Creates a remote BigQuery model pointing to a Vertex AI embedding endpoint.
     """
     model_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_EMBEDDING_MODEL_ID}"
     
@@ -124,27 +139,28 @@ def create_text_embedding_model():
     REMOTE WITH CONNECTION `us.{config.CONNECTION_ID}`
     OPTIONS(ENDPOINT='{config.GENERATIVE_AI_EMBEDDING_MODEL_ENDPOINT}');
     """
-    
-    query_job = bq_client.query(query)
-    query_job.result()  # Wait for the job to complete
+    bq_client.query(query).result()
     print(f"✅ Remote embedding model created: {model_id}")
 
 
+# ==============================
+# DOCUMENT INGESTION
+# ==============================
 
-# ---------------- DOCUMENT INGESTION FUNCTIONS ---------------- #
-
-# ---------------- DOCUMENT AI PROCESSOR ---------------- #
 def create_layout_parser_processor():
     """
-    Creates a Layout Parser Processor in Document AI and returns processor_id.
-    One-time setup.
+    Creates a Layout Parser Processor in Document AI.
+    Returns processor_id for use in remote models.
     """
-    location = config.DATASET_LOCATION  # e.g., "us"
+    location = config.DATASET_LOCATION
     processor_display_name = "layout_parser_processor"
     processor_type = "LAYOUT_PARSER_PROCESSOR"
 
     opts = ClientOptions(api_endpoint="us-documentai.googleapis.com")
-    client = documentai.DocumentProcessorServiceClient(credentials=credentials,client_options=opts)
+    client = documentai.DocumentProcessorServiceClient(
+        credentials=credentials, 
+        client_options=opts
+    )
 
     parent = client.common_location_path(config.PROJECT_ID, location.lower())
     processor = client.create_processor(
@@ -155,20 +171,14 @@ def create_layout_parser_processor():
         ),
     )
 
-    # Print the processor information
-    print(f"✅ Document AI processor created:")
-    print(f"Processor Name: {processor.name}")
-    print(f"Processor Display Name: {processor.display_name}")
-    print(f"Processor Type: {processor.type_}")
-
+    print(f"✅ Document AI processor created: {processor.name}")
     processor_id = processor.name.split("/")[-1]
     return processor_id
 
-# ---------------- EXTERNAL OBJECT TABLE ---------------- #
+
 def create_external_pdf_table():
     """
-    Creates an external object table pointing to PDFs in GCS.
-    One-time setup.
+    Creates an external table in BigQuery pointing to PDFs in GCS.
     """
     sql = f"""
     CREATE OR REPLACE EXTERNAL TABLE `{config.PROJECT_ID}.{config.DATASET_ID}.{config.PDF_DATA_OBJECT_TABLE_ID}`
@@ -179,14 +189,12 @@ def create_external_pdf_table():
     )
     """
     bq_client.query(sql).result()
-    print("✅ External object table created.")
+    print("✅ External PDF object table created.")
 
 
-# ---------------- REMOTE DOCUMENT AI MODEL ---------------- #
 def create_remote_parser_model(processor_id: str):
     """
     Creates a remote Document AI model in BigQuery referencing the Layout Parser processor.
-    One-time setup.
     """
     sql = f"""
     CREATE OR REPLACE MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.LAYOUT_PARSER_REMOTE_MODEL}`
@@ -200,11 +208,9 @@ def create_remote_parser_model(processor_id: str):
     print("✅ Remote parser model created.")
 
 
-# ---------------- PARSED TABLE ---------------- #
 def create_parsed_table():
     """
-    Creates parsed PDF table with proper schema.
-    One-time setup.
+    Creates a parsed PDF table with defined schema.
     """
     schema = [
         bigquery.SchemaField("uri", "STRING"),
@@ -222,17 +228,13 @@ def create_parsed_table():
 
 def create_embeddings_table_if_not_exists():
     """
-    Creates the embeddings table if it doesn't exist.
-    Should be run once before processing PDFs incrementally.
+    Creates the embeddings table for processed documents if it doesn't exist.
     """
     table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}"
-
-    # Create table if it doesn't exist
     try:
         bq_client.get_table(table_id)
         print(f"✅ Embeddings table already exists: {table_id}")
     except:
-        # Define a minimal schema (columns will match ML.GENERATE_EMBEDDING output)
         schema = [
             bigquery.SchemaField("uri", "STRING"),
             bigquery.SchemaField("chunk_id", "STRING"),
@@ -241,47 +243,54 @@ def create_embeddings_table_if_not_exists():
             bigquery.SchemaField("page_end", "INT64"),
             bigquery.SchemaField("text_embeddings", "FLOAT64", mode="REPEATED"),
         ]
-
         table = bigquery.Table(table_id, schema=schema)
         bq_client.create_table(table)
         print(f"✅ Embeddings table created: {table_id}")
 
+
 def create_vector_index_if_not_exists():
-
-    sql = f"""CREATE OR REPLACE VECTOR INDEX my_index ON `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`(text_embeddings) 
-    OPTIONS(index_type = 'TREE_AH',
-    distance_type = 'COSINE')
     """
-
+    Creates a vector index on the embeddings table for similarity search.
+    """
+    sql = f"""
+    CREATE OR REPLACE VECTOR INDEX my_index 
+    ON `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`(text_embeddings)
+    OPTIONS(index_type = 'TREE_AH', distance_type = 'COSINE')
+    """
     bq_client.query(sql).result()
     print("✅ Vector index created (or replaced).")
 
 
 def create_document_ingestion_setup():
-    """Run all one-time setup steps."""
+    """
+    Run all document ingestion setup steps.
+    """
     processor_id = create_layout_parser_processor()
     create_external_pdf_table()
     create_remote_parser_model(processor_id)
     create_embeddings_table_if_not_exists()
 
-# -----------------------------
-# Resource Creation
-# -----------------------------
 
+# ==============================
+# RESOURCE CREATION
+# ==============================
 def create_resources():
-    # create_bq_dataset()
+    """
+    Run all initial setup and resource creation steps.
+    """
+    create_bq_dataset()
     # create_transcription_model()
     # create_gemini_remote_model()
     # create_text_embedding_model()
     # create_audio_object_table()
-    create_embeddings_table()
+    # create_embeddings_table()
     # create_document_ingestion_setup()
     pass
 
-# -----------------------------
-# Main
-# -----------------------------
 
+# ==============================
+# MAIN
+# ==============================
 if __name__ == "__main__":
     create_resources()
-    # delete_resources()
+    # delete_resources()  # Optional: implement deletion if needed

@@ -3,7 +3,7 @@ Unit tests for the transcription functionality.
 """
 
 import unittest
-from src.bigquery_utils import transcribe_audio
+from src.bigquery_utils.bigquery_utils import transcribe_audio
 from src.config import PROJECT_ID, DATASET_ID
 
 class TestTranscription(unittest.TestCase):

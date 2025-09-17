@@ -1,10 +1,10 @@
 import pandas as pd
 import json
-from src import config
 import uuid
 from datetime import datetime
-import numpy as np
-from src.bigquery_utils import generate_transcript_embedding, generate_therapy_plan
+from src import config
+from src.bigquery_utils.embeddings import generate_transcript_embedding
+from src.bigquery_utils.therapy import generate_therapy_plan
 
 def extract_word_level(transcripts_df):
     """
