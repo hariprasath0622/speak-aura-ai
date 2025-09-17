@@ -60,30 +60,31 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 ## 3. Set up GCP resources and permissions
 
 1. Open the notebook:
+2. Run all cells to configure IAM roles + connections.
 
 ``` bash
 
 notebooks/gcp_resource_setup.ipynb
 
 ```
-2. Run all cells to configure IAM roles + connections.
 
-## 4. Create a virtual environment
+
+## 3. Create a virtual environment
 
 ``` bash
-python -m venv aura_env
+python3 -m venv aura_env
 source aura_env/bin/activate 
 # On Windows: venv aura_env\Scripts\activate
 
 ```
-## 5. Install dependencies
+## 4. Install dependencies
 
 ``` bash
 pip install -r requirements.txt
 
 ```
 
-## 6. Create project resources
+## 5. Create project resources
 
 1. Open a terminal and navigate to the src folder:
 
@@ -95,7 +96,7 @@ cd src
 python -m create_resource.create_resource
 ```
 
-## 7. Run the project
+## 6. Run the project
 
 1. Open a new terminal.
 2. Make sure you are in the root folder of the project.
@@ -147,3 +148,22 @@ speak-aura-ai/
 
 
 ## License
+
+
+<!-- 
+
+gcloud auth application-default revoke
+
+gcloud init
+
+1] Re-initialize this configuration [default] with new settings
+
+Login 
+
+choose created project
+
+gcloud auth application-default login
+
+gcloud cheat-sheet 
+
+-->

@@ -7,9 +7,8 @@ import pandas as pd
 import uuid
 
 def transcribe_audio(gcs_uri, bq_client):
-    """
-    Runs BigQuery ML.TRANSCRIBE on the uploaded audio file.
-    """
+    print(f"▶️ Starting transcription for: {gcs_uri}")
+
     recognition_config = {
         "model": config.SPEECH_MODEL_NAME,
         "languageCodes": ["en-US"],
@@ -33,23 +32,29 @@ def transcribe_audio(gcs_uri, bq_client):
             RECOGNITION_CONFIG => (JSON '{config_str}')
         )
     """
-    transcripts = bq_client.query(query).to_dataframe()
 
-    # BigQuery returns UTC → add IST column
+    print("▶️ Running BigQuery ML.TRANSCRIBE…")
+    job = bq_client.query(query)
+    print(f"   Job ID: {job.job_id}")
+
+    transcripts = job.to_dataframe()
+    print(f"✅ Query finished. Rows returned: {len(transcripts)}")
+
+    # Add timestamps
     utc_now = datetime.now(ZoneInfo("UTC"))
     ist_now = utc_now.astimezone(ZoneInfo("Asia/Kolkata"))
+    transcripts["processed_at"] = utc_now
+    transcripts["processed_at_ist"] = ist_now.replace(tzinfo=None)
 
-    transcripts["processed_at"] = utc_now  # keep UTC TIMESTAMP
-    transcripts["processed_at_ist"] = ist_now.replace(tzinfo=None)  # store as DATETIME (no tz)
-
-    # Save transcripts to BigQuery
+    # Save transcripts
     table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.TRANSCRIBE_TABLE_ID}"
-    bq_client.load_table_from_dataframe(
-                    dataframe=transcripts,
-                    destination=table_id,
-                    job_config=bigquery.LoadJobConfig(write_disposition="WRITE_APPEND")
-    ).result()
-
+    print(f"▶️ Writing transcripts to {table_id} …")
+    load_job = bq_client.load_table_from_dataframe(
+        dataframe=transcripts,
+        destination=table_id,
+        job_config=bigquery.LoadJobConfig(write_disposition="WRITE_APPEND")
+    )
+    load_job.result()  # wait for completion
     print("✅ Transcription complete and stored in BigQuery!")
 
     return transcripts
@@ -174,9 +179,9 @@ def fetch_progress_data(bq_client):
     Returns: pandas.DataFrame
     """
 
-    query = """
+    query = f"""
     SELECT run_id, metrics, processed_at
-    FROM `bhack-471114.speakaura_ai_dataset.analysis_results_embeddings`
+    FROM `{config.PROJECT_ID}.{config.DATASET_ID}.{config.ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID}`
     ORDER BY processed_at ASC
     """
 
@@ -210,7 +215,7 @@ def fetch_forecast(bq_client, horizon: int = 10, confidence_level: float = 0.8) 
           SELECT 
             SAFE_CAST(JSON_VALUE(metrics, '$.severity_score') AS FLOAT64) * -100 + 100 AS fluency_score,
             processed_at
-          FROM `bhack-471114.speakaura_ai_dataset.analysis_results_embeddings`
+          FROM `{config.PROJECT_ID}.{config.DATASET_ID}.{config.ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID}`
           ORDER BY processed_at
         ),
         data_col => 'fluency_score',
@@ -297,67 +302,73 @@ def get_processed_files(st, bq_client):
         st.warning(f"Could not fetch processed files: {e}")
         return set()
 
+
 def generate_text_with_vector_search(
-    bq_client ,
+    bq_client,
     user_question: str,
     top_k: int = 10,
     fraction_lists_to_search: float = 0.01,
-    max_output_tokens: int = 512
+    max_output_tokens: int = 512,
+    temperature: float = 0.2,
+    top_p: float = 0.9
 ) -> str:
-    """
-    Generate text augmented by vector search results from BigQuery.
+    """Generate text augmented by vector search results from BigQuery using Vertex AI Gemini model."""
 
-    Args:
-        bq_client: BigQuery client
-        project_id: GCP project ID
-        dataset_id: BigQuery dataset ID
-        embeddings_table: Table with stored embeddings
-        embedding_model: Embedding model (BigQuery ML)
-        text_model: Text generation model (e.g. gemini-pro / gemini-flash)
-        user_question: Query to answer
-        top_k: Number of chunks to retrieve
-        fraction_lists_to_search: Controls IVF search performance
-        max_output_tokens: Max output tokens for the response
-
-    Returns:
-        str: Generated answer from Gemini
-    """
+    options_json = json.dumps({"fraction_lists_to_search": fraction_lists_to_search})
 
     query = f"""
-    SELECT
-      ml_generate_text_llm_result AS generated
-    FROM
-      ML.GENERATE_TEXT(
+    SELECT ml_generate_text_llm_result AS generated
+    FROM ML.GENERATE_TEXT(
         MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_MODEL}`,
         (
-          SELECT
-            CONCAT(
-              'Question: {user_question}\n\n',
-              'Answer concisely using the context below:\n\n',
-              STRING_AGG(FORMAT("context: %s (source: %s)", base.content, base.uri), '\n\n')
+            SELECT CONCAT(
+                "Question: ", @user_question, "\\n\\n",
+                "Answer concisely using the context below:\\n\\n",
+                STRING_AGG(
+                    FORMAT("context: %s (source: %s)", base.content, base.uri),
+                    "\\n\\n"
+                )
             ) AS prompt
-          FROM
-            VECTOR_SEARCH(
-              TABLE `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`,
-              'embedding',
-              (
-                SELECT
-                  ml_generate_embedding_result AS embedding,
-                  '{user_question}' AS query
-                FROM
-                  ML.GENERATE_EMBEDDING(
-                    MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_EMBEDDING_MODEL_ID}`,
-                    (SELECT '{user_question}' AS content)
-                  )
-              ),
-              top_k => {top_k},
-              OPTIONS => '{{"fraction_lists_to_search": {fraction_lists_to_search}}}'
-            )
+            FROM (
+                SELECT uri, content, chunk_id, page_start, page_end
+                FROM VECTOR_SEARCH(
+                    TABLE (
+                        SELECT uri, content, chunk_id, page_start, page_end, text_embeddings
+                        FROM `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}`
+                    ),
+                    'text_embeddings',
+                    (
+                        SELECT ml_generate_embedding_result AS embedding
+                        FROM ML.GENERATE_EMBEDDING(
+                            MODEL `{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_EMBEDDING_MODEL_ID}`,
+                            (SELECT @user_question AS content)
+                        )
+                    ),
+                    top_k => @top_k,
+                    OPTIONS => '{options_json}'
+                )
+            ) AS base
         ),
-        STRUCT({max_output_tokens} AS max_output_tokens, TRUE AS flatten_json_output)
-      )
+        STRUCT(
+            {max_output_tokens} AS max_output_tokens,
+            {temperature} AS temperature,
+            {top_p} AS top_p,
+            TRUE AS flatten_json_output
+        )
+    )
     """
-    print("Running query for text generation with vector search...",bq_client)
-    results = bq_client.query(query).result()
-    row = next(results, None)
-    return row.generated if row else "No answer generated."
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("user_question", "STRING", user_question),
+            bigquery.ScalarQueryParameter("top_k", "INT64", top_k),
+        ]
+    )
+
+    try:
+        results = bq_client.query(query, job_config=job_config).result()
+        row = next(results, None)
+        return row.generated if row else "No answer generated."
+    except Exception as e:
+        print(f"❌ An error occurred: {e}")
+        return "An error occurred while generating the response."

@@ -27,6 +27,6 @@ def render(tab, st, bq_client):
 
                 # Save in chat history
                 st.session_state.chat_history.append({"q": user_input, "a": answer})
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.warning("Please enter a question.")

@@ -2,9 +2,10 @@
 from google.cloud import bigquery, storage
 from google.oauth2 import service_account
 import os
+from src.config import SERVICE_ACCOUNT_KEY_FILE_PATH
 
 # Path to your service account key
-SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "..", "credentials", "bhack-471114-2b12cc8d7377.json")
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), SERVICE_ACCOUNT_KEY_FILE_PATH)
 
 # Create credentials and client
 credentials = service_account.Credentials.from_service_account_file(

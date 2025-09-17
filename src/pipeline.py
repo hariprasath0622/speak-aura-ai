@@ -4,7 +4,12 @@ from src.bigquery_utils import transcribe_audio
 from src.analyze_stammer import analyze_stammer
 from src.clients import get_bq_client
 
+os.environ["GRPC_VERBOSITY"] = "NONE"
+os.environ["GRPC_LOG_SEVERITY_LEVEL"] = "ERROR"
+
 bq_client = get_bq_client()
+
+
 
 def run_pipeline(local_file):
     """

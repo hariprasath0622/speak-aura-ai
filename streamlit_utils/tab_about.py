@@ -39,6 +39,9 @@ def render(tab, st):
             1. Generate transcript embeddings using **`ML.GENERATE_EMBEDDINGS`**  
             2. Perform top-k vector search using **`VECTOR_SEARCH`**  
         - 📈 **Results stored back in BigQuery** for continuous tracking & progress monitoring
+        - 📈 ** And speech therapy documents are also injested and created embeddings for that pdf contents and created vector index for that , that will be used by ai generate text to grounding the data and user have any questions about that so it will domain speciifc answers 
+                    and it also used to genrate thereapy plans
+                    
 
         ---
         **Learn More About Stammering / Stuttering:**  

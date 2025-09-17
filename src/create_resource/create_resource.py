@@ -16,16 +16,6 @@ storage_client = get_storage_client()
 # -----------------------------
 # Functions
 # -----------------------------
-def create_gcs_bucket():
-    bucket_name = config.BUCKET_NAME
-    bucket = storage_client.bucket(bucket_name)
-    if not bucket.exists():
-        storage_client.create_bucket(bucket, location=config.DATASET_LOCATION)
-        print(f"✅ Created bucket {bucket_name}")
-    else:
-        print(f"ℹ️ Bucket {bucket_name} already exists")
-    return bucket
-
 
 def create_bq_dataset():
     dataset_ref = bigquery.Dataset(f"{config.PROJECT_ID}.{config.DATASET_ID}")
@@ -64,25 +54,6 @@ def create_audio_object_table():
     """
     client.query(sql).result()
     print(f"External object table created: {table_full_name}")
-
-
-def create_analysis_results_table():
-    """Create analysis_results table with transcript, metrics, therapy plan, and words_df JSON."""
-    table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.ANALYSIS_RESULT_TABLE_ID}"
-    
-    sql = f"""
-    CREATE TABLE IF NOT EXISTS `{table_id}` (
-        run_id STRING,                 -- unique id per run
-        transcript STRING,
-        metrics JSON,                  -- metrics dict as JSON
-        therapy_plan STRING,
-        words_df JSON,                 -- full word-level breakdown stored as JSON
-        processed_at TIMESTAMP
-    )
-    """
-    job = bq_client.query(sql)
-    job.result()
-    print(f"✅ Table ready: {table_id}")
 
 def create_embeddings_table():
     """
@@ -288,25 +259,22 @@ def create_vector_index_if_not_exists():
 
 def create_document_ingestion_setup():
     """Run all one-time setup steps."""
-    # processor_id = create_layout_parser_processor()
-    # create_external_pdf_table()
-    # create_remote_parser_model(processor_id)
-    # create_embeddings_table_if_not_exists()
-    # create_vector_index_if_not_exists()
+    processor_id = create_layout_parser_processor()
+    create_external_pdf_table()
+    create_remote_parser_model(processor_id)
+    create_embeddings_table_if_not_exists()
 
 # -----------------------------
 # Resource Creation
 # -----------------------------
 
 def create_resources():
-    # create_gcs_bucket()
     # create_bq_dataset()
     # create_transcription_model()
     # create_gemini_remote_model()
     # create_text_embedding_model()
     # create_audio_object_table()
-    # create_analysis_results_table()
-    # create_embeddings_table()
+    create_embeddings_table()
     # create_document_ingestion_setup()
     pass
 
