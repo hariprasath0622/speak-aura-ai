@@ -25,6 +25,8 @@ def render(tab, st):
         # -----------------------------
         st.header("AI-Powered Stammer Analysis & Therapy Suggestions")
 
+        st.markdown("---")
+
         # -----------------------------
         # Check if analysis exists in session state
         # -----------------------------
@@ -37,6 +39,8 @@ def render(tab, st):
             st.subheader("Transcript")
             st.write(analysis["transcript"])
 
+            st.markdown("---")
+
             # -----------------------------
             # Speech Metrics
             # -----------------------------
@@ -44,27 +48,37 @@ def render(tab, st):
 
             # Convert metrics dict to a DataFrame for display
             metrics_df = pd.DataFrame(analysis["metrics"], index=[0]).T
-            metrics_df.columns = ["Value"]
+            metrics_df.reset_index(inplace=True)   # move index into a column
+            metrics_df.columns = ["Metric", "Value"]  # rename columns
 
-            # Ensure all values are strings (fix Arrow conversion error)
+            # Ensure all values are strings
             metrics_df["Value"] = metrics_df["Value"].astype(str)
 
-            st.table(metrics_df)
+            # Use Styler for alignment
+            styled_metrics = (
+                metrics_df.style
+                .set_properties(subset=["Metric"], **{"text-align": "left", "font-weight": "bold"})
+                .set_properties(subset=["Value"], **{"text-align": "center"})
+            )
+
+            st.dataframe(styled_metrics, width='stretch', hide_index=True)
+
+            st.markdown("---")
 
             # -----------------------------
             # Word-Level Breakdown
             # -----------------------------
             st.subheader("Word-Level Breakdown")
 
-           # Legend / color key
+            # Legend / color key
             st.markdown("""
             **Color Key:**  
-            - 🟨 Yellow → Filler words (e.g., "uh", "um")  
-            - 🟧 Orange → Repetitions  
-            - 🟥 Red → Long pauses (>1.5 sec)  
-            - 🟦 Blue → Prolongations (stretched sounds, e.g., "s-s-so")  
+            🟨 Yellow → Filler words  
+            🟧 Orange → Repetitions  
+            🟥 Red → Long pauses  
+            🟦 Blue → Prolongations (stretched sounds)  
             """)
-            
+
             df = analysis["words_df"].copy()
 
             # Highlight function for styling only certain columns
@@ -92,6 +106,8 @@ def render(tab, st):
 
             st.dataframe(df.style.apply(highlight_words, axis=1))
 
+            st.markdown("---")
+
             # -----------------------------
             # Detected Patterns
             # -----------------------------
@@ -112,6 +128,8 @@ def render(tab, st):
                     st.markdown(f"- {p}")
             else:
                 st.markdown("No major patterns detected.")
+
+            st.markdown("---")
 
             # -----------------------------
             # Therapy Plan

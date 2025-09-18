@@ -4,8 +4,10 @@
 import streamlit as st
 from dotenv import load_dotenv
 
+
 # Custom modules
 from src.clients import get_bq_client
+from streamlit_utils.load_side_bar import load_side_bar
 from streamlit_utils import (
     tab_upload, tab_analysis, tab_semantic, 
     tab_progress, tab_about, tab_ingest_document,
@@ -41,6 +43,7 @@ def init_session_state():
     if 'current_analysis' not in st.session_state:
         st.session_state.current_analysis = None
 
+
 # ==============================
 # MAIN APP FUNCTION
 # ==============================
@@ -54,13 +57,17 @@ def main():
 
     # Initialize session state
     init_session_state()
-
+    
+    
     # ==============================
     # SIDEBAR
     # ==============================
-    st.sidebar.title("SpeakAura AI 🎤")
-    st.sidebar.info("AI-powered speech therapy for stammering")
+    # st.sidebar.title("SpeakAura AI")
+    # st.sidebar.info("AI-powered speech therapy for stammering")
+    
+    load_side_bar(st)
 
+    
     # ==============================
     # TABS
     # ==============================
