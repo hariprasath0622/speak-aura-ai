@@ -71,7 +71,7 @@ def create_audio_object_table():
     print(f"✅ External object table created: {table_full_name}")
 
 
-def create_embeddings_table():
+def create_audio_embeddings_table():
     """
     Creates an empty table to store transcript embeddings incrementally.
     """
@@ -226,7 +226,7 @@ def create_parsed_table():
     print(f"✅ Parsed table created: {table_id}")
 
 
-def create_embeddings_table_if_not_exists():
+def create_speech_doc_embeddings_table():
     """
     Creates the embeddings table for processed documents if it doesn't exist.
     """
@@ -265,10 +265,10 @@ def create_document_ingestion_setup():
     """
     Run all document ingestion setup steps.
     """
-    processor_id = create_layout_parser_processor()
-    create_external_pdf_table()
-    create_remote_parser_model(processor_id)
-    create_embeddings_table_if_not_exists()
+    # processor_id = create_layout_parser_processor()
+    # create_external_pdf_table()
+    # create_remote_parser_model(processor_id)
+    create_speech_doc_embeddings_table()
 
 
 # ==============================
@@ -278,13 +278,13 @@ def create_resources():
     """
     Run all initial setup and resource creation steps.
     """
-    create_bq_dataset()
+    # create_bq_dataset()
     # create_transcription_model()
     # create_gemini_remote_model()
     # create_text_embedding_model()
     # create_audio_object_table()
-    # create_embeddings_table()
-    # create_document_ingestion_setup()
+    create_audio_embeddings_table()
+    create_document_ingestion_setup()
     pass
 
 

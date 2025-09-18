@@ -20,7 +20,9 @@ def transcribe_audio(gcs_uri: str, bq_client: bigquery.Client):
         bq_client (bigquery.Client): Initialized BigQuery client.
 
     Returns:
-        pd.DataFrame: Transcription results with timestamps.
+        tuple:
+            (True, transcripts: pd.DataFrame) on success
+            (False, message: str) on failure
     """
 
     print(f"▶️ Starting transcription for: {gcs_uri}")
@@ -56,6 +58,16 @@ def transcribe_audio(gcs_uri: str, bq_client: bigquery.Client):
 
     transcripts = job.to_dataframe()
     print(f"✅ Query finished. Rows returned: {len(transcripts)}")
+    
+    # ⛔ Early exit if no transcripts
+    if transcripts.empty or "transcripts" not in transcripts.columns:
+        if "ml_transcribe_status" in transcripts.columns and not transcripts["ml_transcribe_status"].empty:
+            error_detail = transcripts["ml_transcribe_status"].iloc[0]  # first value
+        else:
+            error_detail = "Unknown error"
+
+        msg = f"❌ No transcript generated for {gcs_uri}. Because {error_detail}. Exiting pipeline."
+        return False, msg
 
     # Add timestamps
     utc_now = datetime.now(ZoneInfo("UTC"))
@@ -71,7 +83,7 @@ def transcribe_audio(gcs_uri: str, bq_client: bigquery.Client):
         destination=table_id,
         job_config=bigquery.LoadJobConfig(write_disposition="WRITE_APPEND")
     )
-    load_job.result()  # wait for completion
+    load_job.result()
     print("✅ Transcription complete and stored in BigQuery!")
 
-    return transcripts
+    return True, transcripts

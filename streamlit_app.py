@@ -66,13 +66,13 @@ def main():
     # ==============================
     # Define the different sections of the app
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-        "🎙️ Upload & Transcribe",     # Upload audio and get transcript
+        "🎙️ Upload & Transcribe",      # Upload audio and get transcript
         "🧠 Stammer Insights",         # Analyze speech patterns and provide insights
-        "🕵️ Similarity Check",        # Compare transcripts or detect similarity
+        "🕵️ Similar Cases",            # Compare transcripts or detect similarity
         "📊 Progress Dashboard",       # Track therapy progress over time
         "📂 Knowledge Base",           # Store and retrieve reference documents
         "💬 AI Therapy Chat",          # Chat with AI for therapy guidance
-        "ℹ️ About App"                 # App info, instructions, credits
+        "ℹ️ About Us"                 # App info, instructions, credits
     ])
 
     # ==============================

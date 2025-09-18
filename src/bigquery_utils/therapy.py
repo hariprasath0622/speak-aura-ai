@@ -7,6 +7,7 @@
 
 import json
 from src import config
+import pandas as pd
 
 def generate_therapy_plan(transcript_text: str, metrics_dict: dict, bq_client):
     """
@@ -22,8 +23,13 @@ def generate_therapy_plan(transcript_text: str, metrics_dict: dict, bq_client):
         str: Generated therapy plan.
     """
 
-    # Convert metrics dict to JSON for inclusion in prompt
-    metrics_json = json.dumps(metrics_dict)
+    # Convert metrics dict to JSON, ensuring any DataFrame is serializable
+    metrics_dict_serializable = metrics_dict.copy()
+    for key, value in metrics_dict_serializable.items():
+        if isinstance(value, pd.DataFrame):
+            metrics_dict_serializable[key] = value.to_dict(orient="records")
+
+    metrics_json = json.dumps(metrics_dict_serializable)
 
     # Build AI prompt with guidance
     therapy_prompt = f"""

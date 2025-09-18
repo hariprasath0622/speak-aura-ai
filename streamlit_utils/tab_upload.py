@@ -69,10 +69,17 @@ def render(tab, st):
                     analysis, transcript_embedding = run_pipeline(
                         st.session_state.local_path, st
                     )
-                if analysis:
+
+                if analysis is not None:
+                    # ✅ Success: save results
                     st.session_state.current_analysis = analysis
                     st.session_state.current_transcript_embedding = transcript_embedding
                     st.rerun()
+                else:
+                    # ❌ Failure: show retry prompt
+                    st.warning("⚠️ Analysis could not be completed. Please upload a new audio file and try again.")
+                    st.session_state.current_analysis = None
+                    st.session_state.current_transcript_embedding = None
 
         # -----------------------------
         # Case 3: No audio yet → choose input method

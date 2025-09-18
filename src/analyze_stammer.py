@@ -33,69 +33,105 @@ def extract_word_level(transcripts_df):
             # dynamic top-level key (the GCS URI)
             top_key = list(data["results"].keys())[0]
 
-            words_list = data["results"][top_key]["inline_result"]["transcript"]["results"][0]["alternatives"][0]["words"]
+            results = data["results"][top_key]["inline_result"]["transcript"].get("results", [])
 
-            for word_item in words_list:
-                all_words.append({
-                    "word": word_item["word"],
-                    "start_time": float(word_item["start_offset"].replace("s","")),
-                    "end_time": float(word_item["end_offset"].replace("s",""))
-                })
+            for result in results:
+                alternatives = result.get("alternatives", [])
+                if not alternatives:
+                    continue
+
+                words_list = alternatives[0].get("words", [])
+                for word_item in words_list:
+                    all_words.append({
+                        "word": word_item["word"],
+                        "start_time": float(word_item["start_offset"].replace("s","")),
+                        "end_time": float(word_item["end_offset"].replace("s",""))
+                    })
         except Exception as e:
             print(f"Error processing {uri}: {e}")
             continue
 
     return pd.DataFrame(all_words)
 
-def compute_speech_metrics(words_df):
+
+def compute_speech_metrics(words_df, long_pause_thresh=1.5):
+    """
+    Advanced stammer/stuttering analysis for word-level transcripts.
+
+    Args:
+        words_df (pd.DataFrame): Word-level transcript with columns ['word', 'start_time', 'end_time']
+        long_pause_thresh (float): Threshold for long pauses in seconds
+
+    Returns:
+        dict: Summary metrics
+        pd.DataFrame: Word-level analysis with disfluency annotations
+    """
     if words_df.empty:
-        return {
-            "total_words": 0,
-            "filler_count": 0,
-            "repetitions": 0,
-            "long_pauses": 0,
-            "severity_score": 0.0
-        }
+        return {}, pd.DataFrame()
 
-    # Define fillers
-    # Expanded stammer/stuttering filters
-    fillers = [
-        # Basic fillers
-        "uh", "um", "er", "ah", "hmm",
-        
-        # Filler with punctuation
-        "uh,", "um,", "er,", "ah,",
-        
-        # Stuttering-style broken sounds
-        "b-b-but", "c-c-can", "d-d-do", "l-l-like", "m-m-me", "s-s-so", "w-w-well"
-    ]
+    df = words_df.copy()
     
-    # Mark filler words
-    words_df["is_filler"] = words_df["word"].str.lower().isin(fillers)
+    # --- Disfluency detection ---
+    fillers = ["uh", "um", "ah", "er", "hmm"]
+    df["is_filler"] = df["word"].str.lower().str.strip(",.")\
+                        .isin(fillers)
     
-    # Check for immediate repetitions
-    words_df["prev_word"] = words_df["word"].shift(1)
-    words_df["is_repetition"] = words_df["word"] == words_df["prev_word"]
+    # Immediate word repetitions
+    df["prev_word"] = df["word"].shift(1)
+    df["is_repetition"] = df["word"] == df["prev_word"]
 
-    # Calculate pauses between words
-    words_df["next_start"] = words_df["start_time"].shift(-1)
-    words_df["pause"] = words_df["next_start"] - words_df["end_time"]
-    words_df["long_pause"] = words_df["pause"] > 1.5  # seconds
+    # Prolongations: repeated letters (>2)
+    df["is_prolongation"] = df["word"].str.match(r"([a-zA-Z])\1{2,}", case=False)
 
-    # Metrics
-    filler_count = int(words_df["is_filler"].sum())
-    repetitions = int(words_df["is_repetition"].sum())
-    long_pauses = int(words_df["long_pause"].sum())
-    total_words = len(words_df)
-    severity_score = (filler_count + repetitions + long_pauses) / total_words if total_words > 0 else 0.0
+    # Inter-word pauses
+    df["next_start"] = df["start_time"].shift(-1)
+    df["pause"] = df["next_start"] - df["end_time"]
+    df["is_block"] = df["pause"] > long_pause_thresh
 
-    return {
+    # --- Speech metrics ---
+    total_words = len(df)
+    total_duration = df["end_time"].max() - df["start_time"].min()
+    speech_rate = total_words / total_duration if total_duration > 0 else 0
+
+    filler_count = int(df["is_filler"].sum())
+    repetitions = int(df["is_repetition"].sum())
+    prolongations = int(df["is_prolongation"].sum())
+    blocks = int(df["is_block"].sum())
+    long_pause_count = blocks  # same as blocks
+
+    # Weighted severity score
+    # Assign weights: block=3, prolongation=2, repetition=1.5, filler=1
+    severity_score = (
+        3*blocks + 2*prolongations + 1.5*repetitions + 1*filler_count
+    ) / total_words
+
+    # Severity level
+    if severity_score < 0.1:
+        severity_level = "Mild"
+    elif severity_score < 0.25:
+        severity_level = "Moderate"
+    else:
+        severity_level = "Severe"
+
+    summary = {
         "total_words": total_words,
+        "total_duration_sec": total_duration,
+        "speech_rate_wps": speech_rate,
         "filler_count": filler_count,
         "repetitions": repetitions,
-        "long_pauses": long_pauses,
-        "severity_score": severity_score
+        "prolongations": prolongations,
+        "blocks": blocks,
+        "long_pauses": long_pause_count,
+        "severity_score": severity_score,
+        "severity_level": severity_level
     }
+
+    # Keep only useful columns for word-level analysis
+    df = df[["word", "start_time", "end_time", "pause", 
+             "is_filler", "is_repetition", "is_prolongation", "is_block"]]
+
+    return summary, df
+
 
 def insert_analysis_result_with_embedding(bq_client, result_dict):
     """
@@ -143,7 +179,7 @@ def analyze_stammer(transcripts_df, bq_client):
     words_df = extract_word_level(transcripts_df)
     # print("Word-level breakdown:\n", words_df.head())
     
-    metrics = compute_speech_metrics(words_df)
+    metrics, words_analysis = compute_speech_metrics(words_df)
     # print("Speech metrics:\n", metrics)
     
     therapy_plan = generate_therapy_plan(transcript_text, metrics, bq_client)
@@ -152,7 +188,7 @@ def analyze_stammer(transcripts_df, bq_client):
         "transcript": transcript_text,
         "metrics": metrics,
         "therapy_plan": therapy_plan,
-        "words_df": words_df
+        "words_df": words_analysis
     }
 
     # Insert into single table with embeddings

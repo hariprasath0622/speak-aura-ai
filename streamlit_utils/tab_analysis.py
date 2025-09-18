@@ -41,27 +41,54 @@ def render(tab, st):
             # Speech Metrics
             # -----------------------------
             st.subheader("Speech Metrics")
+
             # Convert metrics dict to a DataFrame for display
             metrics_df = pd.DataFrame(analysis["metrics"], index=[0]).T
             metrics_df.columns = ["Value"]
+
+            # Ensure all values are strings (fix Arrow conversion error)
+            metrics_df["Value"] = metrics_df["Value"].astype(str)
+
             st.table(metrics_df)
 
             # -----------------------------
             # Word-Level Breakdown
             # -----------------------------
             st.subheader("Word-Level Breakdown")
+
+           # Legend / color key
+            st.markdown("""
+            **Color Key:**  
+            - 🟨 Yellow → Filler words (e.g., "uh", "um")  
+            - 🟧 Orange → Repetitions  
+            - 🟥 Red → Long pauses (>1.5 sec)  
+            - 🟦 Blue → Prolongations (stretched sounds, e.g., "s-s-so")  
+            """)
+            
             df = analysis["words_df"].copy()
 
-            # Highlight special words (fillers, repetitions, long pauses)
+            # Highlight function for styling only certain columns
             def highlight_words(row):
-                if row.get("is_filler"):
-                    return ["background-color: yellow"] * len(row)
-                elif row.get("is_repetition"):
-                    return ["background-color: orange"] * len(row)
-                elif row.get("long_pause"):
-                    return ["background-color: red"] * len(row)
+                styles = [""] * len(row)  # default style
+                cols_to_color = ["word", "start_time", "end_time", "pause"]
+
+                if row["is_filler"]:
+                    color = "background-color: yellow; font-weight: bold;"   # yellow
+                elif row["is_repetition"]:
+                    color = "background-color: orange; font-weight: bold;"   # orange
+                elif row["is_block"]:
+                    color = "background-color: red; font-weight: bold;"   # red
+                elif row["is_prolongation"]:
+                    color = "background-color: lightblue; font-weight: bold;"   # blue
                 else:
-                    return [""] * len(row)
+                    return styles
+
+                # Apply only to selected columns
+                for col in cols_to_color:
+                    if col in row.index:
+                        styles[row.index.get_loc(col)] = color
+
+                return styles
 
             st.dataframe(df.style.apply(highlight_words, axis=1))
 
@@ -75,8 +102,10 @@ def render(tab, st):
                 patterns.append("Frequent filler words (uh, um, etc.)")
             if df["is_repetition"].any():
                 patterns.append("Word repetitions detected")
-            if df["long_pause"].any():
+            if df["is_block"].any():
                 patterns.append("Long pauses (>1.5s) detected")
+            if df["is_prolongation"].any():
+                patterns.append("Prolonged/stretched sounds detected")
 
             if patterns:
                 for p in patterns:

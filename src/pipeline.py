@@ -36,9 +36,10 @@ def run_pipeline(local_file, st):
     Args:
         local_file (str): Local path to audio file (.wav or .mp3)
         st (module): Streamlit module for UI updates
+        bq_client (bigquery.Client): BigQuery client
 
     Returns:
-        tuple: (analysis dict, transcript embedding)
+        tuple: (analysis dict | None, transcript embedding | None)
     """
     # Define steps for progress display
     steps = [
@@ -62,8 +63,24 @@ def run_pipeline(local_file, st):
     # Step 2: Transcribe audio
     # -----------------------------
     status_text.text(f"📝 {steps[1]}...")
-    transcripts = transcribe_audio(gcs_path, bq_client)
+    result = transcribe_audio(gcs_path, bq_client)
+
+    if not result[0]:
+        # Failure → gracefully handle
+        msg = result[1]
+        st.session_state["ml_transcribe_status"] = msg
+        status_text.text(msg)
+        st.error(msg)
+
+        # Clear progress bar
+        progress_bar.empty()
+
+        # Ask user to upload again
+        return None, None  # exit gracefully
+
+    transcripts = result[1]
     progress_bar.progress(66)
+    st.session_state["ml_transcribe_status"] = "✅ Transcription complete and stored in BigQuery"
 
     # -----------------------------
     # Step 3: Analyze stammer patterns
