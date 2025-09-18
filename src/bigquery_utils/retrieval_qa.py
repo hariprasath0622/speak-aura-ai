@@ -11,9 +11,9 @@ from src import config
 def generate_text_with_vector_search(
     bq_client: bigquery.Client,
     user_question: str,
-    top_k: int = 10,
+    top_k: int = 3,
     fraction_lists_to_search: float = 0.01,
-    max_output_tokens: int = 512,
+    max_output_tokens: int = 2000,
     temperature: float = 0.2,
     top_p: float = 0.9
 ) -> str:

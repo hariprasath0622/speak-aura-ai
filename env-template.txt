@@ -1,24 +1,28 @@
 PROJECT_ID = ""
 PROJECT_NUMBER = ""
-BUCKET_NAME = "speak-aura-ai-audio"
-DATASET_ID = "speakaura_ai_dataset"
+BUCKET_NAME = ""
+DATASET_ID = "speak_aura_ai_dataset"
 DATASET_LOCATION = "US"
-CONNECTION_ID = "speakaura_connection"
-
-SPEECH_MODEL_ID  = "transcribe_model" 
-SPEECH_MODEL_NAME = "chirp" 
-
-GENERATIVE_AI_MODEL = "gemini_2_5_flash" 
+CONNECTION_ID = "speak_aura_connection"
+ 
+SPEECH_MODEL_ID  = "transcribe_model"
+SPEECH_MODEL_NAME = "chirp"
+ 
+GENERATIVE_AI_MODEL = "gemini_2_5_flash"
 GENERATIVE_AI_MODEL_ENDPOINT ="gemini-2.5-flash"
-
+ 
 GENERATIVE_AI_EMBEDDING_MODEL_ID = "gemini_embedding_001"
 GENERATIVE_AI_EMBEDDING_MODEL_ENDPOINT = "gemini-embedding-001"
-
-AUDIO_OBJECT_TABLE_ID = "audio_files"
-TRANSCRIBE_TABLE_ID ="transcripts_results"
-ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID = "analysis_results_embeddings"
-ANALYSIS_RESULT_TABLE_ID ="analysis_results"
-
+ 
+LAYOUT_PARSER_REMOTE_MODEL = "layout_parser_model"
+ 
+AUDIO_OBJECT_TABLE_ID = "audio_data_object_table"
+TRANSCRIBE_TABLE_ID ="transcripts_results_table"
+ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID = "audio_embeddings_table"
+PDF_DATA_OBJECT_TABLE_ID = "pdf_data_object_table"
+PARSED_PDF_TABLE_ID = "parsed_pdf_table"
+SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID = "speech_document_embeddings_table"
+ 
 MAIN_ACCOUNT_ID = ""
 SERVICE_ACCOUNT_KEY_ID =""
-SERVICE_ACCOUNT_KEY_FILE_PATH ="../credentials/[filename.json]"
+SERVICE_ACCOUNT_KEY_FILE_PATH =""

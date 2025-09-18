@@ -39,7 +39,7 @@ def render(tab, st):
         - Detect stammering patterns  
         - Track & forecast progress  
         - Find semantic similarities (**Semantic Detective**)  
-        - Run multimodal analysis  
+        - Ingest Speech Documents & Chat with AI Speech Therapist 
 
         ---
         ### 🌍 Practical Impact – How It Helps People

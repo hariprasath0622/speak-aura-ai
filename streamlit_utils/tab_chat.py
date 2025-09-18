@@ -39,7 +39,7 @@ def render(tab, st, bq_client):
         # -----------------------------
         if st.button("Send", key="chat_send"):
             if user_input.strip():  # Ensure input is not empty
-                with st.spinner("Generating response..."):
+                with st.spinner("Generating response using ML.GENERATE_TEXT()"):
                     # Generate AI response using BigQuery vector search
                     answer = generate_text_with_vector_search(
                         bq_client,

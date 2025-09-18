@@ -1,5 +1,8 @@
 # Speak Aura AI
 
+## Deployed link : www.example.com
+
+
 A speech analysis tool that identifies and analyzes stammering patterns using **Google Cloud BigQuery AI**.  
 Our solution empowers individuals with speech disfluencies to **track progress, receive personalized therapy plans, and compare their journey with similar cases** — all powered by **SQL + AI**.
 
@@ -22,11 +25,6 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 ![Architecture Diagram](assets/speak_aura_architecture.png)
 
 
-
-## Architecture
-
-?
-
 ## How Our Solution Uses BigQuery AI
 
 ### 🖼️ Multimodal Pioneer
@@ -43,6 +41,7 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 
 ---
 ✅ By combining **forecasting, semantic search, and multimodal analysis**, our solution demonstrates the **full spectrum of BigQuery AI capabilities** in one integrated workflow.  
+
 
 ## Local Setup & Execution
 
@@ -150,6 +149,54 @@ speak-aura-ai/
 
 ```
 
-## Reference code
+## Deployment on GCP using Cloud Run
 
- https://github.com/GoogleCloudPlatform/generative-ai/tree/e3fdeae53809fadc60887f3c0411c00510cfe561/gemini/use-cases/applying-llms-to-data
+1. Run this commands from root of the project 
+
+```
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
+
+```
+
+```
+gcloud builds submit --tag gcr.io/[PROJECT_ID]/[docker-image-name]
+
+```
+
+```
+gcloud run deploy [app-name] \
+  --image gcr.io/[PROJECT_ID]/[docker-image-name] \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+
+```
+
+## Feedback on BigQuery AI 🚀
+
+We really enjoyed building with BigQuery AI and want to share some feedback from our experience:
+
+- **Strengths we loved:**
+  - Seamless SQL-first integration of AI (e.g., `ML.GENERATE_TEXT`, `AI.FORECAST`, `VECTOR_SEARCH`) made it very intuitive.
+  - Ability to work directly inside BigQuery without exporting data reduced complexity.
+  - Multimodal + vector search capabilities gave us flexibility to handle unstructured data like PDFs and audio.
+
+- **Challenges we faced:**
+  - I have **created 3 accounts** during this hackathon because some accounts got disabled unexpectedly. This caused delays and   made it harder to stay focused on implementation.
+  - Billing/project setup took more time than expected compared to actual model development.
+
+- **Suggestions for improvement:**
+  - Providing a **sandbox environment for hackathon participants** would save time and allow teams to focus on innovation instead of account setup.
+  - Clearer troubleshooting guides around account restrictions and IAM permissions would be helpful.
+  - Easier local testing / simulation tools for `AI.GENERATE` and `VECTOR_SEARCH` before deploying on full datasets would be great.
+
+Overall, BigQuery AI felt like a **powerful extension of SQL**, and once setup hurdles were cleared, development was smooth and productive. We believe lowering the entry barrier with a sandbox would make the hackathon experience even better.
+
+
+## Reference Used for Coding
+
+https://cloud.google.com/bigquery/docs/bqml-introduction
+
+https://github.com/GoogleCloudPlatform/generative-ai/tree/main/gemini/use-cases/applying-llms-to-data
+
+https://github.com/GoogleCloudPlatform/generative-ai/tree/main/gemini/use-cases/retrieval-augmented-generation

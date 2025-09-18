@@ -73,18 +73,20 @@ def render(tab, st, bq_client):
             # Progress chart
             # -----------------------------
             st.plotly_chart(create_progress_chart(progress_df), width="stretch")
-
+            
+            st.markdown("---")
+            
             # -----------------------------
             # Forecast button
             # -----------------------------
-            if st.button("🔮 Forecast Progress"):
+            if st.button("🔮 Forecast Progress With AI"):
                 st.session_state.forecast_requested = True
 
             # -----------------------------
             # Show forecast if requested
             # -----------------------------
             if st.session_state.forecast_requested:
-                with st.spinner("Running AI.FORECAST..."):
+                with st.spinner("Running AI.FORECAST() in BigQuery...."):
                     try:
                         # Fetch forecast data from BigQuery
                         st.session_state.forecast_df = fetch_forecast(
@@ -95,6 +97,11 @@ def render(tab, st, bq_client):
                         st.subheader("Forecasted Improvement")
                         fig = create_forecast_chart(progress_df, st.session_state.forecast_df)
                         st.plotly_chart(fig, width="stretch")
+                        
+                        st.info(
+                            "⚠️ Note: Forecasted values may appear lower or timestamps shorter due to current dataset size. "
+                            "Accuracy improves as the system incorporates more incoming real-time data"
+                        )
 
                         # Show forecasted data as table
                         st.dataframe(st.session_state.forecast_df, width="stretch")

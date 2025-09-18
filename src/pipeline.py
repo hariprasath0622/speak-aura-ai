@@ -44,7 +44,7 @@ def run_pipeline(local_file, st):
     # Define steps for progress display
     steps = [
         "Uploading audio to cloud storage",
-        "Transcribing audio",
+        "Transcribing audio using ML.TRANSCRIBE()",
         "Analyzing stammer patterns"
     ]
 

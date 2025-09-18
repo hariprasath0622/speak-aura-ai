@@ -85,7 +85,7 @@ def render(tab, st):
         # Case 3: No audio yet → choose input method
         # -----------------------------
         else:
-            input_method = st.radio("Choose input method:", ["🎤 Record Audio", "📂 Upload File"])
+            input_method = st.radio("Choose input method:", ["📂 Upload File","🎤 Record Audio"])
             if input_method == "🎤 Record Audio":
                 render_record_audio(st)
             elif input_method == "📂 Upload File":
@@ -144,7 +144,7 @@ def render_upload_file(st):
     """
     Render the UI for uploading audio files (.wav or .mp3)
     """
-    audio_file = st.file_uploader("Upload a voice recording (.wav or .mp3)", type=["wav", "mp3"])
+    audio_file = st.file_uploader("Upload a voice recording (.mp3)", type=["mp3"])
     if audio_file:
         # Generate unique timestamped filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
