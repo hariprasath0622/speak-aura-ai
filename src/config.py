@@ -41,9 +41,8 @@ AUDIO_OBJECT_TABLE_ID = os.getenv("AUDIO_OBJECT_TABLE_ID")
 TRANSCRIBE_TABLE_ID = os.getenv("TRANSCRIBE_TABLE_ID")
 ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID = os.getenv("ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID")
 PDF_DATA_OBJECT_TABLE_ID = os.getenv("PDF_DATA_OBJECT_TABLE_ID")
-PARSED_PDF_TABLE_ID = os.getenv("PARSED_PDF_TABLE_ID")
 SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID = os.getenv("SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID")
-
+COURSE_TABLE_ID = os.getenv("COURSE_TABLE_ID")
 # -----------------------------
 # Speech-to-Text Model
 # -----------------------------
@@ -66,3 +65,13 @@ GENERATIVE_AI_EMBEDDING_MODEL_ENDPOINT = os.getenv("GENERATIVE_AI_EMBEDDING_MODE
 # Document AI Layout Parser
 # -----------------------------
 LAYOUT_PARSER_REMOTE_MODEL = os.getenv("LAYOUT_PARSER_REMOTE_MODEL")
+
+# Define max_tokens per category
+
+category_max_tokens = {
+    "Warm-up (short & simple)": 200,
+    "Practice Sentences": 2000,
+    "Conversational": 2000,
+    "Longer Reading": 2500,
+    "Therapy Drills": 2000
+}

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from src.clients import get_bq_client
 from streamlit_utils.load_side_bar import load_side_bar
 from streamlit_utils import (
-    tab_upload, tab_analysis, tab_semantic, 
+    tab_courses, tab_upload, tab_analysis, tab_semantic, 
     tab_progress, tab_about, tab_ingest_document,
     tab_chat
 )
@@ -43,6 +43,9 @@ def init_session_state():
     if 'current_analysis' not in st.session_state:
         st.session_state.current_analysis = None
 
+    if "current_top_courses" not in st.session_state:
+        st.session_state.current_analysis = None
+
 
 # ==============================
 # MAIN APP FUNCTION
@@ -72,11 +75,12 @@ def main():
     # TABS
     # ==============================
     # Define the different sections of the app
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7,tab8 = st.tabs([
         "🎙️ Upload & Transcribe",      # Upload audio and get transcript
         "🧠 Stammer Insights",         # Analyze speech patterns and provide insights
-        "🕵️ Similar Cases",            # Compare transcripts or detect similarity
+        "🎓 Recommended Courses & Crafted Exercises",
         "📊 Progress Dashboard",       # Track therapy progress over time
+        "🕵️ Similar Cases",            # Compare transcripts or detect similarity
         "📂 Knowledge Base",           # Store and retrieve reference documents
         "💬 AI Therapy Chat",          # Chat with AI for therapy guidance
         "ℹ️ About Us"                 # App info, instructions, credits
@@ -85,13 +89,14 @@ def main():
     # ==============================
     # RENDER TABS
     # ==============================
-    tab_upload.render(tab1, st)
+    tab_upload.render(tab1, st, bq_client)
     tab_analysis.render(tab2, st)
-    tab_semantic.render(tab3, st, bq_client)
+    tab_courses.render(tab3)   # <-- NEW
     tab_progress.render(tab4, st, bq_client)
-    tab_ingest_document.render(tab5, st, bq_client)
-    tab_chat.render(tab6, st, bq_client)
-    tab_about.render(tab7, st)
+    tab_semantic.render(tab5, st, bq_client)
+    tab_ingest_document.render(tab6, st, bq_client)
+    tab_chat.render(tab7, st, bq_client)
+    tab_about.render(tab8, st)
 
 # ==============================
 # RUN APP

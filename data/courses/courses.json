@@ -1,0 +1,44 @@
+[
+  {
+    "course_id": "C001",
+    "title": "Public Speaking with Confidence Workshop",
+    "description": "Workshop on breathing techniques, pitch, eliminating mumbling, and delivering powerful speeches with confidence.",
+    "category": "public_speaking",
+    "url": "https://www.trust.org/training/public-speaking-with-confidence/"
+  },
+  {
+    "course_id": "C002",
+    "title": "Speaking with Confidence (AMA / MindEdge)",
+    "description": "Learn causes of speaking anxiety and real-world strategies to build confidence, reduce nerves, and present with clarity.",
+    "category": "public_speaking",
+    "url": "https://www.ama.org/on-demand/speak-with-confidence/"
+  },
+  {
+    "course_id": "C003",
+    "title": "Speech Pathology & Public Speaking Courses (MedBridge)",
+    "description": "Video-based online SLP courses spanning specialties; includes courses on stuttering, fluency, and speech sound disorders.",
+    "category": "therapy",
+    "url": "https://www.medbridge.com/educate/courses/speech-language-pathology"  
+  },
+  {
+    "course_id": "C004",
+    "title": "Free Online Speech Therapy Courses",
+    "description": "Free courses teaching basics of speech therapy, voice disorders, communication disorders, suitable for beginners.",
+    "category": "therapy",
+    "url": "https://alison.com/tag/speech-therapy" 
+  },
+  {
+    "course_id": "C005",
+    "title": "Public Speaking Courses on Coursera",
+    "description": "Coursera catalog of public speaking courses helping learners communicate clearly, build confidence, and deliver effective presentations.",
+    "category": "public_speaking",
+    "url": "https://www.coursera.org/courses?query=public+speaking" 
+  },
+  {
+    "course_id": "C006",
+    "title": "Speech Therapy PD CEU Courses",
+    "description": "Collection of continuing education courses for speech-language pathologists including live webinars, self-paced content, and expert teachers.",
+    "category": "therapy",
+    "url": "https://www.speechtherapypd.com/" 
+  }
+]

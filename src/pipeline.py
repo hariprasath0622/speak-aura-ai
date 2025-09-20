@@ -45,7 +45,10 @@ def run_pipeline(local_file, st):
     steps = [
         "Uploading audio to cloud storage",
         "Transcribing audio using ML.TRANSCRIBE()",
-        "Analyzing stammer patterns"
+        "Analyzing stammer patterns",
+        "Generating Therapy Plans",
+        "Choosing AI-Recommended Courses Based on Your Speech Analysis",
+        "Creating Gamified Exercises Just for You"
     ]
 
     # Initialize Streamlit progress bar and status text
@@ -57,7 +60,7 @@ def run_pipeline(local_file, st):
     # -----------------------------
     status_text.text(f"📤 {steps[0]}...")
     gcs_path = upload_audio(local_file, f"audio/{os.path.basename(local_file)}")
-    progress_bar.progress(33)
+    progress_bar.progress(25)
 
     # -----------------------------
     # Step 2: Transcribe audio
@@ -79,18 +82,18 @@ def run_pipeline(local_file, st):
         return None, None  # exit gracefully
 
     transcripts = result[1]
-    progress_bar.progress(66)
+    progress_bar.progress(50)
     st.session_state["ml_transcribe_status"] = "✅ Transcription complete and stored in BigQuery"
 
     # -----------------------------
     # Step 3: Analyze stammer patterns
     # -----------------------------
     status_text.text(f"🔬 {steps[2]}...")
-    analysis, transcript_embedding = analyze_stammer(transcripts, bq_client)
+    analysis, transcript_embedding,top_courses = analyze_stammer(transcripts, bq_client,progress_bar,status_text,steps)
     progress_bar.progress(100)
 
     # -----------------------------
     # Pipeline complete
     # -----------------------------
     status_text.text("✅ Pipeline complete!")
-    return analysis, transcript_embedding
+    return analysis, transcript_embedding,top_courses
