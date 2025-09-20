@@ -74,47 +74,135 @@ def save_session_results(transcript: str, analysis: dict) -> dict:
 # ==============================
 # FORECAST & PROGRESS CHARTS
 # ==============================
+# def create_forecast_chart(history_df, forecast_df) -> go.Figure:
+#     """
+#     Create a Plotly chart showing historical fluency and forecast with confidence intervals.
+#     """
+#     fig = go.Figure()
+
+#     # Historical fluency
+#     fig.add_trace(go.Scatter(
+#         x=history_df["Date"],
+#         y=history_df["Fluency Score"],
+#         mode="lines+markers",
+#         name="Historical Fluency",
+#         line=dict(color="blue")
+#     ))
+
+#     # Forecast fluency
+#     fig.add_trace(go.Scatter(
+#         x=forecast_df["forecast_timestamp"],
+#         y=forecast_df["fluency_forecast"],
+#         mode="lines+markers",
+#         name="Forecast Fluency",
+#         line=dict(color="green", dash="dash")
+#     ))
+
+#     # Confidence interval (shaded area)
+#     fig.add_trace(go.Scatter(
+#         x=list(forecast_df["forecast_timestamp"]) + list(forecast_df["forecast_timestamp"][::-1]),
+#         y=list(forecast_df["prediction_interval_upper_bound"]) + list(forecast_df["prediction_interval_lower_bound"][::-1]),
+#         fill="toself",
+#         fillcolor="rgba(0, 255, 0, 0.2)",
+#         line=dict(color="rgba(255,255,255,0)"),
+#         hoverinfo="skip",
+#         showlegend=True,
+#         name="Confidence Interval"
+#     ))
+
+#     fig.update_layout(
+#         title="Speech Progress & Forecast",
+#         xaxis_title="Date",
+#         yaxis_title="Fluency Score",
+#         template="plotly_white"
+#     )
+
+#     return fig
 def create_forecast_chart(history_df, forecast_df) -> go.Figure:
     """
-    Create a Plotly chart showing historical fluency and forecast with confidence intervals.
+    Create a polished Plotly chart showing historical daily fluency,
+    forecast with confidence intervals, and target milestones.
     """
+
+    # Ensure history is daily aggregated
+    history_df = history_df.groupby("Date", as_index=False).agg({"Fluency Score": "mean"})
+
     fig = go.Figure()
 
-    # Historical fluency
+    # -----------------------------
+    # Historical fluency (daily)
+    # -----------------------------
     fig.add_trace(go.Scatter(
         x=history_df["Date"],
         y=history_df["Fluency Score"],
         mode="lines+markers",
         name="Historical Fluency",
-        line=dict(color="blue")
+        line=dict(color="blue"),
+        hovertemplate="Date: %{x}<br>Score: %{y:.1f}%"
     ))
 
+    # Highlight today's latest score
+    latest_date = history_df["Date"].max()
+    latest_score = history_df.loc[history_df["Date"] == latest_date, "Fluency Score"].values[0]
+    fig.add_trace(go.Scatter(
+        x=[latest_date],
+        y=[latest_score],
+        mode="markers+text",
+        name="Current Score",
+        marker=dict(color="blue", size=12, symbol="circle"),
+        text=[f"Today: {latest_score:.1f}%"],
+        textposition="top center",
+        showlegend=False
+    ))
+
+    # -----------------------------
     # Forecast fluency
+    # -----------------------------
     fig.add_trace(go.Scatter(
         x=forecast_df["forecast_timestamp"],
         y=forecast_df["fluency_forecast"],
         mode="lines+markers",
         name="Forecast Fluency",
-        line=dict(color="green", dash="dash")
+        line=dict(color="green", dash="dash"),
+        hovertemplate="Date: %{x}<br>Forecast: %{y:.1f}%"
     ))
 
-    # Confidence interval (shaded area)
+    # -----------------------------
+    # Confidence interval shading
+    # -----------------------------
     fig.add_trace(go.Scatter(
         x=list(forecast_df["forecast_timestamp"]) + list(forecast_df["forecast_timestamp"][::-1]),
         y=list(forecast_df["prediction_interval_upper_bound"]) + list(forecast_df["prediction_interval_lower_bound"][::-1]),
         fill="toself",
-        fillcolor="rgba(0, 255, 0, 0.2)",
+        fillcolor="rgba(0, 200, 0, 0.15)",  # subtle green band
         line=dict(color="rgba(255,255,255,0)"),
         hoverinfo="skip",
         showlegend=True,
         name="Confidence Interval"
     ))
 
+    # -----------------------------
+    # Target fluency reference line
+    # -----------------------------
+    target_fluency = 90
+    fig.add_hline(
+        y=target_fluency,
+        line=dict(color="red", dash="dot"),
+        annotation_text=f"Target Fluency: {target_fluency}%",
+        annotation_position="top left"
+    )
+
+    # -----------------------------
+    # Layout tweaks
+    # -----------------------------
     fig.update_layout(
-        title="Speech Progress & Forecast",
+        title="Daily Speech Progress & Forecast",
         xaxis_title="Date",
-        yaxis_title="Fluency Score",
-        template="plotly_white"
+        yaxis_title="Fluency Score (%)",
+        template="plotly_white",
+        xaxis=dict(showgrid=True, tickformat="%Y-%m-%d"),
+        yaxis=dict(range=[0, 100]),
+        legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center")
     )
 
     return fig

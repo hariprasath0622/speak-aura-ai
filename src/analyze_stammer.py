@@ -5,6 +5,7 @@ from datetime import datetime
 from src import config
 from src.bigquery_utils.embeddings import generate_transcript_embedding
 from src.bigquery_utils.therapy import generate_therapy_plan
+from src.bigquery_utils.retrieval_qa import fetch_top_courses_vector_search
 
 def extract_word_level(transcripts_df):
     """
@@ -171,7 +172,7 @@ def insert_analysis_result_with_embedding(bq_client, result_dict):
         return transcript_embedding
 
 # Updated analyze_stammer function
-def analyze_stammer(transcripts_df, bq_client):
+def analyze_stammer(transcripts_df, bq_client,progress_bar,status_text,steps):
     if transcripts_df.empty:
         return None
     
@@ -182,16 +183,25 @@ def analyze_stammer(transcripts_df, bq_client):
     metrics, words_analysis = compute_speech_metrics(words_df)
     # print("Speech metrics:\n", metrics)
     
+    status_text.text(f"🔬 {steps[3]}...")
     therapy_plan = generate_therapy_plan(transcript_text, metrics, bq_client)
+    progress_bar.progress(70)
+
+    query_text = f"Therapy guidance: {therapy_plan}. Metrics: severity={metrics['severity_score']}, fillers={metrics['filler_count']}, repetitions={metrics['repetitions']}, long_pauses={metrics['long_pauses']}"
     
+    status_text.text(f"🔬 {steps[4]}...")
+    top_courses = fetch_top_courses_vector_search(bq_client,query_text, top_k=3)
+    progress_bar.progress(85)
+
     result = {
         "transcript": transcript_text,
         "metrics": metrics,
         "therapy_plan": therapy_plan,
         "words_df": words_analysis
     }
-
+    status_text.text(f"🔬 {steps[5]}...")
     # Insert into single table with embeddings
     transcript_embedding = insert_analysis_result_with_embedding(bq_client, result)
+    progress_bar.progress(90)
 
-    return result, transcript_embedding
+    return result, transcript_embedding ,top_courses

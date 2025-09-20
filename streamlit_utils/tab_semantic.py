@@ -37,18 +37,29 @@ def render(tab, st, bq_client):
             # Display user's transcript
             st.subheader("Your Transcript")
             st.write(st.session_state.current_analysis["transcript"])
+            
+            # -----------------------------
+            # User input: number of similar cases
+            # -----------------------------
+            num_cases = st.number_input(
+                "How many similar cases would you like to see?",
+                min_value=1,
+                max_value=5,
+                value=1,
+                step=1
+            )
 
             # -----------------------------
             # Find similar cases button
             # -----------------------------
             if st.button("🔍 Find Similar Cases"):
-                with st.spinner("Running semantic search in BigQuery..."):
+                with st.spinner("Running VECTOR_SEARCH() in BigQuery..."):
                     try:
-                        # Fetch top-k similar cases using vector search
+                        # Fetch top-k similar cases using user input
                         similar_df = fetch_similar_cases(
                             bq_client,
                             st.session_state.current_transcript_embedding,
-                            top_k=3
+                            top_k=num_cases
                         )
                     except Exception as e:
                         st.error(f"Error fetching similar cases: {e}")
@@ -57,6 +68,7 @@ def render(tab, st, bq_client):
                 # -----------------------------
                 # Display results
                 # -----------------------------
+                st.markdown("---")
                 if not similar_df.empty:
                     st.success(f"✅ Found {len(similar_df)} similar past cases:")
 
@@ -100,6 +112,8 @@ def render(tab, st, bq_client):
                                 except Exception:
                                     st.warning("⚠️ Metrics not in JSON format")
                                     st.write(row['metrics'])
+
+                            st.markdown("---")
 
                 else:
                     st.warning("No similar cases found in the database yet.")

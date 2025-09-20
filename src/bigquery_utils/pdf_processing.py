@@ -11,7 +11,7 @@ from src import config
 # -----------------------------
 # Process PDF and Generate Embeddings
 # -----------------------------
-def process_pdf_in_bigquery(bq_client, gcs_uri):
+def process_pdf_in_bigquery(bq_client, gcs_uri,progress_bar=None, progress_text=None):
     """
     Processes a PDF with Document AI, generates embeddings, and appends
     both parsed content and embeddings to the final embeddings table.
@@ -30,7 +30,9 @@ def process_pdf_in_bigquery(bq_client, gcs_uri):
     # Generate unique temporary table names per PDF
     temp_process_table = f"{config.PROJECT_ID}.{config.DATASET_ID}.temp_process_{uuid.uuid4().hex[:8]}"
     temp_parsed_table = f"{config.PROJECT_ID}.{config.DATASET_ID}.temp_parsed_{uuid.uuid4().hex[:8]}"
-
+    
+    
+    if progress_text: progress_text.text(f"🔍 Processing ML.PROCESS_DOCUMENT() in BigQuery...")
     # 1️⃣ Process document into temp table
     process_options = '{"layout_config": {"chunking_config": {"chunk_size": 200}}}'
     process_query = f"""
@@ -43,8 +45,10 @@ def process_pdf_in_bigquery(bq_client, gcs_uri):
     WHERE uri = '{gcs_uri}'
     """
     bq_client.query(process_query).result()
+    if progress_bar: progress_bar.progress(33)
 
     # 2️⃣ Parse JSON results into another temp table
+    if progress_text: progress_text.text(f"🔍 Parsing JSON results...")
     parse_query = f"""
     CREATE OR REPLACE TABLE `{temp_parsed_table}` AS
     SELECT
@@ -57,8 +61,10 @@ def process_pdf_in_bigquery(bq_client, gcs_uri):
     UNNEST(JSON_EXTRACT_ARRAY(ml_process_document_result.chunkedDocument.chunks, '$')) AS json
     """
     bq_client.query(parse_query).result()
+    if progress_bar: progress_bar.progress(66)
 
     # 3️⃣ Generate embeddings and append to main embeddings table
+    if progress_text: progress_text.text(f"🔍 Generating embeddings using ML.GENERATE_EMBEDDING() ...")
     embed_query = f"""
     INSERT INTO `{config.PROJECT_ID}.{config.DATASET_ID}.{config.SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID}` 
     SELECT
@@ -79,6 +85,7 @@ def process_pdf_in_bigquery(bq_client, gcs_uri):
     # 4️⃣ Cleanup temporary tables
     bq_client.query(f"DROP TABLE IF EXISTS `{temp_process_table}`").result()
     bq_client.query(f"DROP TABLE IF EXISTS `{temp_parsed_table}`").result()
+
 
 # -----------------------------
 # Fetch Already Processed PDFs

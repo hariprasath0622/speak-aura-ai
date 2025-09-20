@@ -34,11 +34,13 @@ def fetch_progress_data(bq_client):
     return results_df
 
 # -----------------------------
-# Fetch Forecasted Progress
+# Fetch Forecasted Progress (Daily Aggregation)
 # -----------------------------
+
 def fetch_forecast(bq_client, horizon: int = 10, confidence_level: float = 0.8) -> pd.DataFrame:
     """
     Generate forecasted fluency scores using BigQuery AI.FORECAST.
+    Only real forecast values are returned (no synthetic fallback).
 
     Args:
         bq_client (bigquery.Client): Initialized BigQuery client.
@@ -61,18 +63,22 @@ def fetch_forecast(bq_client, horizon: int = 10, confidence_level: float = 0.8) 
     FROM
       AI.FORECAST(
         (
-          SELECT 
-            SAFE_CAST(JSON_VALUE(metrics, '$.severity_score') AS FLOAT64) * -100 + 100 AS fluency_score,
-            processed_at
+          SELECT
+            DATE(processed_at) AS processed_day,
+            AVG(
+              COALESCE(SAFE_CAST(JSON_VALUE(metrics, '$.severity_score') AS FLOAT64), 0) * -100 + 100
+            ) AS fluency_score
           FROM `{config.PROJECT_ID}.{config.DATASET_ID}.{config.ANALYSIS_RESULTS_EMBEDDINGS_TABLE_ID}`
-          ORDER BY processed_at
+          GROUP BY processed_day
+          ORDER BY processed_day
         ),
         data_col => 'fluency_score',
-        timestamp_col => 'processed_at',
+        timestamp_col => 'processed_day',
         horizon => {horizon},
         confidence_level => {confidence_level}
       );
     """
-    query_job = bq_client.query(query)
-    forecast_df = query_job.to_dataframe()
+
+    forecast_df = bq_client.query(query).to_dataframe()
+
     return forecast_df

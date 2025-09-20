@@ -1,0 +1,38 @@
+# Team Survey: BigQuery AI - Building the Future of Data
+
+**Team:** SpeakAura AI  
+
+---
+
+### 1) BigQuery AI: Please list each team member(s) months of experience with BigQuery AI.
+- Hari Prasath V : 3 months  
+- Md Shafi Uddin : 4 months  
+
+---
+
+### 2) Google Cloud: Please list each team member(s) months of experience with Google Cloud.
+- Hari Prasath V : 12 months  
+- Md Shafi Uddin : 12 months  
+
+---
+
+### 3) Feedback
+We really enjoyed working with BigQuery AI during this hackathon.  
+It simplified querying large datasets and made integrating AI models within SQL very intuitive.  
+The ability to generate insights directly from BigQuery without exporting data was a big advantage.  
+Some challenges we faced included setting up permissions correctly like IAM and understanding the nuances of embeddings and ML functions inside BigQuery. However, the documentation and GitHub examples helped us overcome these hurdles.  
+Overall, the experience was very positive, and we see BigQuery AI as a powerful tool for real-world data analysis and AI-driven applications.  
+
+---
+
+### 4) Challenges We Faced
+- I had to **create 3 accounts** during this hackathon because some accounts got disabled unexpectedly. This caused delays and made it harder to stay focused on implementation.  
+- Billing/project setup took more time than expected compared to actual development. 
+- Currently available **ASR models struggle to accurately detect disfluencies** (pauses, repetitions, prolongations), which makes precise stammering analysis more challenging.   
+
+---
+
+### 5) Suggestions for Improvement
+- Providing a **sandbox environment for hackathon participants** would save time and allow teams to focus on innovation instead of account setup.  
+- Clearer troubleshooting guides around account restrictions and IAM permissions would be helpful.  
+- Easier local testing/simulation tools for `AI.GENERATE` and `VECTOR_SEARCH` before deploying on full datasets would be great.  

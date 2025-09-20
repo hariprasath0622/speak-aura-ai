@@ -73,18 +73,22 @@ def render(tab, st, bq_client):
             # Progress chart
             # -----------------------------
             st.plotly_chart(create_progress_chart(progress_df), width="stretch")
-
+            
+            st.markdown("---")
+            
             # -----------------------------
             # Forecast button
             # -----------------------------
-            if st.button("🔮 Forecast Progress"):
+            if st.button("🔮 Forecast Progress With AI"):
                 st.session_state.forecast_requested = True
-
+            
+            st.info("SpeakAura AI not only tracks but forecasts future fluency with BigQuery AI")
+            
             # -----------------------------
             # Show forecast if requested
             # -----------------------------
             if st.session_state.forecast_requested:
-                with st.spinner("Running AI.FORECAST..."):
+                with st.spinner("Running AI.FORECAST() in BigQuery...."):
                     try:
                         # Fetch forecast data from BigQuery
                         st.session_state.forecast_df = fetch_forecast(
@@ -94,12 +98,53 @@ def render(tab, st, bq_client):
                         # Display forecast chart
                         st.subheader("Forecasted Improvement")
                         fig = create_forecast_chart(progress_df, st.session_state.forecast_df)
-                        st.plotly_chart(fig, width="stretch")
+                        st.plotly_chart(fig, width='stretch')
+
+                        # -----------------------------
+                        # Display KPI-based Progress Summary
+                        # -----------------------------
+                        history_df = progress_df.groupby("Date", as_index=False).agg({"Fluency Score": "mean"})
+                        latest_date = history_df["Date"].max()
+                        latest_score = history_df.loc[history_df["Date"] == latest_date, "Fluency Score"].values[0]
+                        initial_score = history_df["Fluency Score"].iloc[0]
+                        progress_percent = latest_score - initial_score
+                        projected_score = st.session_state.forecast_df["fluency_forecast"].iloc[-1]
+
+                        st.subheader("📊 Progress Summary")
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric(
+                            label="Fluency Improvement",
+                            value=f"{progress_percent:.1f}%",
+                            delta=f"{progress_percent:.1f}% over {len(history_df)-1} days"
+                        )
+                        col2.metric(
+                            label=f"Latest Fluency ({latest_date})",
+                            value=f"{latest_score:.1f}%"
+                        )
+                        col3.metric(
+                            label=f"Projected Fluency (Next {len(st.session_state.forecast_df)} days)",
+                            value=f"{projected_score:.1f}%"
+                        )
+
+                        # Additional tips below the KPIs
+                        st.info("⚠️ Keep practicing daily to improve fluency. " 
+                                "💡 Tip: Consistent practice with speech exercises accelerates progress."
+                        )
 
                         # Show forecasted data as table
-                        st.dataframe(st.session_state.forecast_df, width="stretch")
+                        if "forecast_df" in st.session_state:
+                            if st.session_state.forecast_df.empty:
+                                st.warning("⚠️ No forecast data available. Try adding more historical sessions.")
+                            else:
+                                st.dataframe(
+                                        st.session_state.forecast_df[["forecast_timestamp", "fluency_forecast"]],
+                                        width='stretch'
+                                    )
+                                st.info(
+                                 "⚠️ Note: Forecast Accuracy improves as the system incorporates more incoming real-time data "
+                                )
+                        else:
+                            st.info("ℹ️ Forecast not generated yet.")
+                        
                     except Exception as e:
                         st.error(f"Error generating forecast: {e}")
-        else:
-            # Inform user to load progress first
-            st.info("Click **Load My Progress** to view your progress dashboard.")

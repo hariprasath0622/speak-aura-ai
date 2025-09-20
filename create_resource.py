@@ -1,7 +1,7 @@
 # ==============================
 # IMPORTS
 # ==============================
-import os
+import json,time
 import subprocess
 from google.cloud import bigquery, documentai
 from google.api_core.client_options import ClientOptions
@@ -68,6 +68,8 @@ def create_audio_object_table():
     );
     """
     bq_client.query(sql).result()
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
     print(f"✅ External object table created: {table_full_name}")
 
 
@@ -90,6 +92,30 @@ def create_audio_embeddings_table():
     """
     
     bq_client.query(create_table_query).result()
+    print("⏳ Waiting 10 seconds to reflect")
+    time.sleep(10)
+    print(f"✅ Table `{table_id}` is ready!")
+    
+
+def create_course_embeddings_table():
+    """
+    Creates an empty table to store course/resource embeddings for recommendations.
+    """
+    table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.temp_course_table"
+
+    create_table_query = f"""
+    CREATE TABLE IF NOT EXISTS `{table_id}` (
+        course_id STRING,
+        title STRING,
+        description STRING,
+        category STRING,
+        url STRING
+    )
+    """
+    
+    bq_client.query(create_table_query).result()
+    print("⏳ Waiting 10 seconds to reflect")
+    time.sleep(10)
     print(f"✅ Table `{table_id}` is ready!")
 
 
@@ -261,6 +287,63 @@ def create_vector_index_if_not_exists():
     print("✅ Vector index created (or replaced).")
 
 
+def insert_courses(file_path="data/courses/courses.json"):
+    """
+    Reads courses from a JSON file, inserts them into BigQuery,
+    and generates embeddings while creating a new table to avoid streaming buffer issues.
+    """
+
+    table_id = f"{config.PROJECT_ID}.{config.DATASET_ID}.temp_course_table"
+    embedding_model = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.GENERATIVE_AI_EMBEDDING_MODEL_ID}"
+
+    # 1️⃣ Read the courses.json file
+    with open(file_path, "r") as f:
+        courses = json.load(f)
+
+    # 2️⃣ Prepare rows
+    rows_to_insert = []
+    for course in courses:
+        rows_to_insert.append({
+            "course_id": course.get("course_id"),
+            "title": course.get("title"),
+            "description": course.get("description"),
+            "category": course.get("category"),
+            "url": course.get("url")
+        })
+
+    # 3️⃣ Insert courses into BigQuery table
+    errors = bq_client.insert_rows_json(table_id, rows_to_insert)
+    if errors:
+        print("❌ Errors occurred while inserting:", errors)
+        return
+    else:
+        print(f"✅ Inserted {len(rows_to_insert)} courses")
+
+    # 4️⃣ Create a new table with embeddings (avoid streaming buffer issue)
+    embedding_table = f"{config.PROJECT_ID}.{config.DATASET_ID}.{config.COURSE_TABLE_ID}"
+
+    query = f"""
+    CREATE OR REPLACE TABLE `{embedding_table}` AS
+    SELECT c.*,emb.ml_generate_embedding_result AS course_embedding
+    FROM `{table_id}` AS c
+    JOIN ML.GENERATE_EMBEDDING(
+        MODEL `{embedding_model}`,
+        (SELECT course_id, CONCAT(title, " ", description, " Category: ", category) AS content
+         FROM `{table_id}`),
+        STRUCT(TRUE AS flatten_json_output)
+    ) AS emb
+    USING(course_id)
+    """
+
+    # 5️⃣ Run the query
+    bq_client.query(query).result()
+    print(f"✅ Created table `{embedding_table}` with embeddings")
+
+    # 6️⃣ Delete the original table
+    bq_client.delete_table(table_id, not_found_ok=True)
+
+
+
 def create_document_ingestion_setup():
     """
     Run all document ingestion setup steps.
@@ -268,7 +351,7 @@ def create_document_ingestion_setup():
     # processor_id = create_layout_parser_processor()
     # create_external_pdf_table()
     # create_remote_parser_model(processor_id)
-    create_speech_doc_embeddings_table()
+    # create_speech_doc_embeddings_table()
 
 
 # ==============================
@@ -284,13 +367,17 @@ def create_resources():
     # create_text_embedding_model()
     # create_audio_object_table()
     create_audio_embeddings_table()
-    create_document_ingestion_setup()
+    # create_course_embeddings_table()
+    # create_document_ingestion_setup()
     pass
 
+def ingest_data():
+    insert_courses()
 
 # ==============================
 # MAIN
 # ==============================
 if __name__ == "__main__":
     create_resources()
+    # ingest_data()
     # delete_resources()  # Optional: implement deletion if needed
