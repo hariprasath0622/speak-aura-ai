@@ -1,6 +1,6 @@
 # Speak Aura AI
 
-## Deployed link : www.example.com
+## Deployed link : (https://speakaura-389325321804.us-central1.run.app/)
 
 
 A speech analysis tool that identifies and analyzes stammering patterns using **Google Cloud BigQuery AI**.  
