@@ -126,35 +126,53 @@ streamlit run streamlit_app.py
 
 ```
 speak-aura-ai/
-│── credentials/             # GCP service account keys
-├── data/
-│   ├── audio/               # Sample input audio files
-│   └── transcripts/         # Sample transcripts to use while recording
-├── notebooks/
-│   └── gcp_resource_setup.ipynb   # Setup IAM + GCP resources
-├── src/
-│   ├── analyze_stammer.py   # Detect stammering in text
-│   ├── bigquery_utils.py    # All BigQuery query helpers
-│   ├── client.py            # GCP client initialization
-│   ├── config.py            # Project configs (IDs, buckets)
-│   ├── pipeline.py          # Orchestrates data → analysis
-│   └── upload_audio.py      # Upload audio → GCS bucket
-├── streamlit_utils/
-│   ├── tab_upload.py        # UI: Upload audio
-│   ├── tab_analysis.py      # UI: Stammer analysis
-│   ├── tab_semantic.py      # UI: Similar case search
-│   ├── tab_progress.py      # UI: Forecast & progress
-│   ├── tab_about.py         # UI: About section
-│   └── streamlit_helpers.py # Shared UI helpers
-├── tests/
-│   └── test_transcribe.py   # Unit tests for transcription
-│── .env                     # Local env vars
-│── .gitignore               # Git ignore rules
-├── create_resource.py     # Scripts to set up GCS/BigQuery
-│── .env-template.txt        # Env var template
-│── README.md                # Project documentation
-│── requirements.txt         # Python dependencies
-└── streamlit_app.py         # Main Streamlit entrypoint
+│── assets/                          # images
+│── credentials/                     # 🔐 Service account keys (not checked into Git)
+│
+├── data/                            # 📂 Sample datasets
+│   ├── audio/                       # Example input audio files for testing
+│   ├── courses/                     # Example input course files for testing
+│   ├── docs/                        # Example input pdf files for testing
+│   └── transcripts/                 # Example transcripts for practice/recording
+├── notebooks/                       # 📓 Jupyter notebooks for setup/experiments
+│   └── gcp_resource_setup.ipynb     # Notebook to configure IAM + GCP resources
+│
+├── src/                             # 🧩 Core backend source code
+│   └── bigquery_utils/              # Helper modules for BigQuery operations
+│   │    ├── embeddings.py           # Text embeddings + similarity search
+│   │    ├── forecasting.py          # Fluency improvement forecasting (time-series ML)
+│   │    ├── pdf_processing.py       # PDF ingestion + text extraction
+│   │    ├── retrieval.py            # Semantic retrieval of therapy content
+│   │    ├── therapy.py              # Therapy plan generation logic
+│   │    └── transcription.py        # Speech-to-text transcription helpers
+│   ├── analyze_stammer.py           # Runs stammering detection on transcripts
+│   ├── client.py                    # GCP client initialization (BQ, GCS, etc.)
+│   ├── config.py                    # Central configs: project IDs, bucket names
+│   ├── pipeline.py                  # Orchestrates pipeline (upload → analysis → output)
+│   └── upload_to_gcs.py             # Upload audio/transcripts into GCS
+│
+├── streamlit_utils/                 # 🎨 Streamlit UI components
+│   ├── load_side_bar.py             # Sidebar UI (upload controls, navigation)
+│   ├── streamlit_helpers.py         # Shared UI helpers/utilities
+│   ├── tab_about.py                 # "About" section
+│   ├── tab_analysis.py              # Stammer analysis tab (metrics + results)
+│   ├── tab_chat.py                  # AI Therapy Chat interface
+│   ├── tab_courses.py               # Recommended courses & gamified exercises
+│   ├── tab_ingest_document.py       # Document ingestion tab (knowledge base)
+│   ├── tab_progress.py              # Progress dashboard (trends & forecasts)
+│   ├── tab_semantic.py              # Semantic search (find similar cases/resources)
+│   └── tab_upload.py                # Upload audio tab
+│
+├── tests/                           # 🧪 Unit & integration tests
+│   └── test_transcribe.py           # Tests for transcription pipeline
+│
+│── .env                             # Local environment variables (not tracked in Git)
+│── .env-template.txt                # Template for .env file (safe to share)
+│── .gitignore                       # Git ignore rules
+│── README.md                        # 📘 Project documentation
+│── requirements.txt                 # Python dependencies
+│── create_resource.py               # Script to set up GCS & BigQuery resources
+└── streamlit_app.py                 # 🚀 Main Streamlit entrypoint
 
 ```
 
