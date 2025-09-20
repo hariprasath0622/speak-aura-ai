@@ -144,6 +144,4 @@ def fetch_top_courses_vector_search(bq_client: bigquery.Client, user_query: str,
     # Keep only relevant columns
     df = df[['course_id', 'title', 'description', 'category', 'url', 'distance']]
 
-    print(df.head())
-
     return df

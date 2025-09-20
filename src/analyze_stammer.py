@@ -178,10 +178,8 @@ def analyze_stammer(transcripts_df, bq_client,progress_bar,status_text,steps):
     
     transcript_text = transcripts_df["transcripts"].iloc[0]
     words_df = extract_word_level(transcripts_df)
-    # print("Word-level breakdown:\n", words_df.head())
     
     metrics, words_analysis = compute_speech_metrics(words_df)
-    # print("Speech metrics:\n", metrics)
     
     status_text.text(f"🔬 {steps[3]}...")
     therapy_plan = generate_therapy_plan(transcript_text, metrics, bq_client)

@@ -14,7 +14,7 @@ from google import genai
 
 # Absolute path to credentials
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../credentials/hackathon-project-472403-aa5f6655c636.json")
+    os.path.join(os.path.dirname(__file__), f"../{config.SERVICE_ACCOUNT_KEY_FILE_PATH}")
 )
 
 def transcribe_audio(gcs_uri: str, bq_client: bigquery.Client):

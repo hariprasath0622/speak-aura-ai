@@ -39,7 +39,8 @@ def create_bq_dataset():
             print(f"ℹ️ Dataset {config.DATASET_ID} already exists")
         else:
             raise
-
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
     return dataset_ref
 
 
@@ -92,8 +93,8 @@ def create_audio_embeddings_table():
     """
     
     bq_client.query(create_table_query).result()
-    print("⏳ Waiting 10 seconds to reflect")
-    time.sleep(10)
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
     print(f"✅ Table `{table_id}` is ready!")
     
 
@@ -114,8 +115,8 @@ def create_course_embeddings_table():
     """
     
     bq_client.query(create_table_query).result()
-    print("⏳ Waiting 10 seconds to reflect")
-    time.sleep(10)
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
     print(f"✅ Table `{table_id}` is ready!")
 
 
@@ -138,6 +139,8 @@ def create_transcription_model():
     """
     bq_client.query(query).result()
     print(f"✅ Created remote transcription model {config.SPEECH_MODEL_ID}")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def create_gemini_remote_model():
@@ -152,6 +155,8 @@ def create_gemini_remote_model():
     """
     bq_client.query(sql).result()
     print(f"✅ Remote Gemini model `{config.DATASET_ID}.{config.GENERATIVE_AI_MODEL}` created.")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def create_text_embedding_model():
@@ -167,6 +172,8 @@ def create_text_embedding_model():
     """
     bq_client.query(query).result()
     print(f"✅ Remote embedding model created: {model_id}")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 # ==============================
@@ -198,6 +205,8 @@ def create_layout_parser_processor():
     )
 
     print(f"✅ Document AI processor created: {processor.name}")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
     processor_id = processor.name.split("/")[-1]
     return processor_id
 
@@ -216,6 +225,8 @@ def create_external_pdf_table():
     """
     bq_client.query(sql).result()
     print("✅ External PDF object table created.")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def create_remote_parser_model(processor_id: str):
@@ -232,6 +243,8 @@ def create_remote_parser_model(processor_id: str):
     """
     bq_client.query(sql).result()
     print("✅ Remote parser model created.")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def create_parsed_table():
@@ -250,6 +263,8 @@ def create_parsed_table():
     table = bigquery.Table(table_id, schema=schema)
     table = bq_client.create_table(table, exists_ok=True)
     print(f"✅ Parsed table created: {table_id}")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def create_speech_doc_embeddings_table():
@@ -272,6 +287,8 @@ def create_speech_doc_embeddings_table():
         table = bigquery.Table(table_id, schema=schema)
         bq_client.create_table(table)
         print(f"✅ Embeddings table created: {table_id}")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def create_vector_index_if_not_exists():
@@ -285,6 +302,8 @@ def create_vector_index_if_not_exists():
     """
     bq_client.query(sql).result()
     print("✅ Vector index created (or replaced).")
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
 
 def insert_courses(file_path="data/courses/courses.json"):
@@ -338,9 +357,13 @@ def insert_courses(file_path="data/courses/courses.json"):
     # 5️⃣ Run the query
     bq_client.query(query).result()
     print(f"✅ Created table `{embedding_table}` with embeddings")
+    
+    print("⏳ Waiting 5 seconds to reflect")
+    time.sleep(5)
 
     # 6️⃣ Delete the original table
     bq_client.delete_table(table_id, not_found_ok=True)
+
 
 
 
@@ -348,10 +371,10 @@ def create_document_ingestion_setup():
     """
     Run all document ingestion setup steps.
     """
-    # processor_id = create_layout_parser_processor()
-    # create_external_pdf_table()
-    # create_remote_parser_model(processor_id)
-    # create_speech_doc_embeddings_table()
+    processor_id = create_layout_parser_processor()
+    create_external_pdf_table()
+    create_remote_parser_model(processor_id)
+    create_speech_doc_embeddings_table()
 
 
 # ==============================
@@ -361,14 +384,14 @@ def create_resources():
     """
     Run all initial setup and resource creation steps.
     """
-    # create_bq_dataset()
-    # create_transcription_model()
-    # create_gemini_remote_model()
-    # create_text_embedding_model()
-    # create_audio_object_table()
+    create_bq_dataset()
+    create_transcription_model()
+    create_gemini_remote_model()
+    create_text_embedding_model()
+    create_audio_object_table()
     create_audio_embeddings_table()
-    # create_course_embeddings_table()
-    # create_document_ingestion_setup()
+    create_course_embeddings_table()
+    create_document_ingestion_setup()
     pass
 
 def ingest_data():
@@ -379,5 +402,5 @@ def ingest_data():
 # ==============================
 if __name__ == "__main__":
     create_resources()
-    # ingest_data()
+    ingest_data()
     # delete_resources()  # Optional: implement deletion if needed

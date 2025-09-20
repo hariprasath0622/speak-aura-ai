@@ -59,23 +59,21 @@ This makes it easy to get the project running locally without manual resource se
 ## 1. Set up Google Cloud Project credentials
 
 1. Make sure you have a Google Cloud Project.  
-2. Create or download a service account key with the required permissions in IAM in GCP.  
+2. Create service account and download a key with the required permissions in IAM in GCP.  
 3. put the server account key json under the credentials folder (please create) and use that path in required env variable
 
 ## 2. Create a .env file
 
 1. Copy from `.env-template` → `.env` 
 2. Fill in required values (project, dataset, bucket, etc).
+3. Make source you filled the 
 
-## 3. Set up GCP resources and permissions
-
-1. Open the notebook:
-2. Run all cells to configure IAM roles + connections.
-
-``` bash
-
-notebooks/gcp_resource_setup.ipynb
-
+```
+PROJECT_ID , 
+PROJECT_NUMBER and 
+MAIN_ACCOUNT_ID ,
+SERVICE_ACCOUNT_KEY_ID,
+SERVICE_ACCOUNT_KEY_FILE_PATH.
 ```
 
 ## 3. Create a virtual environment
@@ -93,7 +91,18 @@ pip install -r requirements.txt
 
 ```
 
-## 5. Create project resources
+## 5. Set up GCP resources and permissions
+
+1. Open the notebook under notebooks folder and choose create env 
+
+``` bash
+
+notebooks/gcp_resource_setup.ipynb
+
+```
+2. Run all cells to configure IAM roles + connections.
+
+## 6. Create project resources
 
 1. Open a terminal and navigate to the root folder:
 2. Run the resource creation script:
@@ -103,7 +112,7 @@ python create_resource.py
 
 ```
 
-## 6. Run the project
+## 7. Run the project
 
 1. Open a new terminal.
 2. Make sure you are in the root folder of the project.
