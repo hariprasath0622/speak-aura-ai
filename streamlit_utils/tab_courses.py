@@ -25,6 +25,12 @@ def render(tab):
             st.info("Run a stammer analysis first to see course recommendations.")
             return
         
+        analysis = st.session_state.current_analysis
+
+        if not analysis:
+            st.info("Run a speech analysis to generate exercises.")
+            return
+        
         # ------------------------------
         # Recommended Courses
         # ------------------------------
@@ -48,16 +54,11 @@ def render(tab):
         # ------------------------------
 
         st.subheader("🎮 Gamified Interactive Exercises")
-
-        if "current_analysis" not in st.session_state:
-            st.info("Run a speech analysis to generate exercises.")
-            return
         
         # ------------------------------
         # Define exercises based on severity
         # ------------------------------
-
-        analysis = st.session_state.current_analysis
+        
         severity = analysis.get("metrics", {}).get("severity_score", 0)
 
         # Define exercises

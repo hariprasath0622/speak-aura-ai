@@ -185,8 +185,28 @@ def render_record_audio(st):
 # ==============================
 def render_upload_file(st):
     """
-    Render the UI for uploading audio files (.wav or .mp3)
+    Render the UI for uploading audio files (.mp3) and provide a sample audio for testing.
     """
+    st.markdown("🎤 **Upload your audio file or try the sample audio below for testing**")
+
+    # -----------------------------
+    # Sample audio download
+    # -----------------------------
+    sample_audio_path = "assets/sample_audio.mp3"  # path to your sample audio
+    if os.path.exists(sample_audio_path):
+        with open(sample_audio_path, "rb") as f:
+            st.download_button(
+                label="⬇️ Download Sample Audio",
+                data=f,
+                file_name="sample_audio.mp3",
+                mime="audio/mpeg"
+            )
+    else:
+        st.warning("Sample audio file not found.")
+
+    # -----------------------------
+    # Upload user audio
+    # -----------------------------
     audio_file = st.file_uploader("Upload a voice recording (.mp3)", type=["mp3"])
     if audio_file:
         # Generate unique timestamped filename
