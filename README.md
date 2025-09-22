@@ -62,12 +62,12 @@ This makes it easy to get the project running locally without manual resource se
 
 1. Make sure you have a **Google Cloud Project**.  
 2. Create **service account** and download a **key** with the required permissions in IAM in GCP.  
-3. put the **service account key json** under the **credentials folder** (please create) and use that path in required env variable
    make sure you are in root folder
    ```
    mkdir credentials
 
    ```
+3. put the **service account key json** under the **credentials folder** (please create) and use that path in required env variable
 
 ## 2. Create a .env file
 
