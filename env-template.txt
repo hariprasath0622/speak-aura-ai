@@ -25,4 +25,4 @@ SPEECH_DOCUMENT_EMBEDDINGS_TABLE_ID = "speech_document_embeddings_table"
  
 MAIN_ACCOUNT_ID = ""
 SERVICE_ACCOUNT_KEY_ID =""
-SERVICE_ACCOUNT_KEY_FILE_PATH =""
+SERVICE_ACCOUNT_KEY_FILE_PATH ="../[relative path to credentials]"
