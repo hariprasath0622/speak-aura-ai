@@ -45,6 +45,8 @@ Our solution empowers individuals with speech disfluencies to **track progress, 
 
 ## Local Setup & Execution
 
+### Tested with python version 3.11.7
+
 We provide a step-by-step guide to set up and run **SpeakAura AI** locally. To get started:
 
 1. Configure a billing-enabled Google Cloud project in your `.env` file.
@@ -85,7 +87,7 @@ SERVICE_ACCOUNT_KEY_FILE_PATH.
 
 ``` bash
 
-Test with python version 3.11.7
+Tested with python version 3.11.7
 
 python3 -m venv aura_env
 source aura_env/bin/activate 
