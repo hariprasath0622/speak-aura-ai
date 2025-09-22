@@ -79,6 +79,9 @@ SERVICE_ACCOUNT_KEY_FILE_PATH.
 ## 3. Create a virtual environment
 
 ``` bash
+
+Test with python version 3.11.7
+
 python3 -m venv aura_env
 source aura_env/bin/activate 
 # On Windows: venv aura_env\Scripts\activate
