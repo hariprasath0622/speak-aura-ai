@@ -76,11 +76,11 @@ This makes it easy to get the project running locally without manual resource se
 3. Make source you filled the 
 
 ```
-PROJECT_ID , 
-PROJECT_NUMBER and 
-MAIN_ACCOUNT_ID ,
-SERVICE_ACCOUNT_KEY_ID,
-SERVICE_ACCOUNT_KEY_FILE_PATH.
+PROJECT_ID 
+PROJECT_NUMBER  
+MAIN_ACCOUNT_ID 
+SERVICE_ACCOUNT_KEY_ID
+SERVICE_ACCOUNT_KEY_FILE_PATH
 ```
 
 ## 3. Create a virtual environment
